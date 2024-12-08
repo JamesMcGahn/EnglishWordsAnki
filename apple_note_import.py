@@ -22,8 +22,9 @@ class AppleNoteImport(QObject):
         self.content = self.get_note_content(self.noteName)
         print("here")
         if self.content:
+
             self.content = self.clean_html(self.content)
-            self.result.emit(self.content.split(","))
+            self.result.emit(self.content.split(",")[1:])
         else:
             self.result.emit([])
         self.finished.emit()
