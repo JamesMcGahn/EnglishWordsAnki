@@ -1,10 +1,10 @@
 from PySide6.QtWidgets import (
     QButtonGroup,
+    QCheckBox,
     QDialog,
     QHBoxLayout,
     QLabel,
     QPushButton,
-    QRadioButton,
     QSizePolicy,
     QSpacerItem,
     QVBoxLayout,
@@ -17,15 +17,14 @@ class MultiSelectionDialogView(QDialog):
         self.init_ui()
 
     def init_ui(self):
-        self.setWindowTitle("Found Multiple Definitions")
 
         self.dialog_layout = QVBoxLayout()
-        self.label = QLabel("Choose a Defintion")
+        self.label = QLabel()
         self.dialog_layout.addWidget(self.label)
         self.select_btn_group = QButtonGroup()
 
         self.in_dialog_layout = QVBoxLayout()
-        self.none_btn = QRadioButton("None of these")
+        self.none_btn = QCheckBox("None of these")
         self.in_dialog_layout.addWidget(self.none_btn)
         self.dialog_layout.addLayout(self.in_dialog_layout)
         self.dialog_md_hlayout = QHBoxLayout()
