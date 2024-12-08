@@ -1,13 +1,16 @@
-import threading
-
-from PySide6.QtCore import QSize, QThread
+from PySide6.QtCore import QSize, QThread, Signal
 from PySide6.QtGui import QFont
-from PySide6.QtWidgets import QLabel, QMainWindow
+from PySide6.QtWidgets import QMainWindow, QPushButton, QVBoxLayout, QWidget
 
 from apple_note_import import AppleNoteImport
+from components.dialogs.multi_selection import MultiSelectionDialog
+from word_lookup_worker import WordLookupWorker
 
 
 class MainWindow(QMainWindow):
+    user_definition_selection = Signal(list)
+    user_word_selection = Signal(int)
+
     def __init__(self, app):
         super().__init__()
 
@@ -19,10 +22,18 @@ class MainWindow(QMainWindow):
         font = QFont()
         font.setFamilies([".AppleSystemUIFont"])
         self.setFont(font)
-        self.import_words_from_apple_notes()
+
+        self.submit_btn = QPushButton("Submit")
+        self.qwidget = QWidget()
+        self.v_layout = QVBoxLayout()
+        self.v_layout.addWidget(self.submit_btn)
+        self.qwidget.setLayout(self.v_layout)
+        self.setCentralWidget(self.qwidget)
+
+        self.submit_btn.clicked.connect(self.import_words_from_apple_notes)
 
     def import_words_from_apple_notes(self):
-        self.appleNoteThread = QThread(self)
+        self.appleNoteThread = QThread()
 
         self.appleImport = AppleNoteImport("Words")
         self.appleImport.moveToThread(self.appleNoteThread)
@@ -33,3 +44,40 @@ class MainWindow(QMainWindow):
 
     def receive_words(self, words):
         print(words)
+        # self.word_lookup_thread = QThread()
+        self.word_lookup = WordLookupWorker(["bird"])
+        self.word_lookup.multi_definitions.connect(self.select_definitions)
+        self.word_lookup.multi_words.connect(self.select_word)
+        self.user_definition_selection.connect(self.word_lookup.get_user_definition_selection)
+        self.user_word_selection.connect(self.word_lookup.get_user_word_selection)
+        # self.word_lookup_thread.started.connect(self.word_lookup.do_work)
+        # self.word_lookup_thread.start()
+        self.word_lookup.start()
+
+
+    def select_word(self, words):
+        print("********", words)
+        choices = [
+            f"{word["word"]} - { word["partOfSpeech"]} - {word["meaning"]}" for word in words
+        ]
+
+        self.multi_dialog = MultiSelectionDialog(choices, "Found Multiple Words", "Choose a Word",True )
+        self.multi_dialog.md_multi_def_signal.connect(self.receive_word_selection)
+        self.multi_dialog.exec()
+
+    def select_definitions(self, definitions):
+        print("********", definitions)
+        choices = [
+            f"{definition.partOfSpeech} - {definition.definition}" for definition in definitions
+        ]
+        self.multi_dialog = MultiSelectionDialog(choices, "Found Multiple Definitions", "Choose a Defintion", False)
+        self.multi_dialog.md_multi_def_signal.connect(self.receive_definition_selection)
+        self.multi_dialog.exec()
+
+    def receive_word_selection(self, choice):
+        print(choice)
+        self.user_word_selection.emit(choice[0])
+
+    def receive_definition_selection(self, choices):
+        print(choices)
+        self.user_definition_selection.emit(choices)
