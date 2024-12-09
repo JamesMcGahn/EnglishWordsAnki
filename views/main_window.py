@@ -3,6 +3,7 @@ from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QMainWindow, QPushButton, QVBoxLayout, QWidget
 
 from apple_note_import import AppleNoteImport
+from audio_thread import AudioThread
 from components.dialogs.multi_selection import MultiSelectionDialog
 from word_lookup_worker import WordLookupWorker
 
@@ -50,8 +51,8 @@ class MainWindow(QMainWindow):
         self.word_lookup.multi_words.connect(self.select_word)
         self.user_definition_selection.connect(self.word_lookup.get_user_definition_selection)
         self.user_word_selection.connect(self.word_lookup.get_user_word_selection)
-        # self.word_lookup_thread.started.connect(self.word_lookup.do_work)
-        # self.word_lookup_thread.start()
+        self.word_lookup.defined_words.connect(self.receive_defined_words)
+        self.word_lookup.skipped_words.connect(self.receive_skipped_words)
         self.word_lookup.start()
 
 
@@ -81,3 +82,12 @@ class MainWindow(QMainWindow):
     def receive_definition_selection(self, choices):
         print(choices)
         self.user_definition_selection.emit(choices)
+
+    def receive_defined_words(self,words):
+        print('defined words',words)
+        self.audio_thread = AudioThread(words, "./")
+        self.audio_thread.start()
+
+
+    def receive_skipped_words(self,words):
+        print('skipped words',words)
