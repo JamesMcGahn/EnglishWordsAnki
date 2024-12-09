@@ -49,29 +49,36 @@ class MainWindow(QMainWindow):
         self.word_lookup = WordLookupWorker(["bird"])
         self.word_lookup.multi_definitions.connect(self.select_definitions)
         self.word_lookup.multi_words.connect(self.select_word)
-        self.user_definition_selection.connect(self.word_lookup.get_user_definition_selection)
+        self.user_definition_selection.connect(
+            self.word_lookup.get_user_definition_selection
+        )
         self.user_word_selection.connect(self.word_lookup.get_user_word_selection)
         self.word_lookup.defined_words.connect(self.receive_defined_words)
         self.word_lookup.skipped_words.connect(self.receive_skipped_words)
         self.word_lookup.start()
 
-
     def select_word(self, words):
         print("********", words)
         choices = [
-            f"{word["word"]} - { word["partOfSpeech"]} - {word["meaning"]}" for word in words
+            f'{word["word"]} - { word["partOfSpeech"]} - {word["meaning"]}'
+            for word in words
         ]
 
-        self.multi_dialog = MultiSelectionDialog(choices, "Found Multiple Words", "Choose a Word",True )
+        self.multi_dialog = MultiSelectionDialog(
+            choices, "Found Multiple Words", "Choose a Word", True
+        )
         self.multi_dialog.md_multi_def_signal.connect(self.receive_word_selection)
         self.multi_dialog.exec()
 
     def select_definitions(self, definitions):
         print("********", definitions)
         choices = [
-            f"{definition.partOfSpeech} - {definition.definition}" for definition in definitions
+            f"{definition.partOfSpeech} - {definition.definition}"
+            for definition in definitions
         ]
-        self.multi_dialog = MultiSelectionDialog(choices, "Found Multiple Definitions", "Choose a Defintion", False)
+        self.multi_dialog = MultiSelectionDialog(
+            choices, "Found Multiple Definitions", "Choose a Defintion", False
+        )
         self.multi_dialog.md_multi_def_signal.connect(self.receive_definition_selection)
         self.multi_dialog.exec()
 
@@ -83,11 +90,10 @@ class MainWindow(QMainWindow):
         print(choices)
         self.user_definition_selection.emit(choices)
 
-    def receive_defined_words(self,words):
-        print('defined words',words)
+    def receive_defined_words(self, words):
+        print("defined words", words)
         self.audio_thread = AudioThread(words, "./")
         self.audio_thread.start()
 
-
-    def receive_skipped_words(self,words):
-        print('skipped words',words)
+    def receive_skipped_words(self, words):
+        print("skipped words", words)
