@@ -2,6 +2,7 @@ from PySide6.QtCore import QSize, QThread, Signal
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QMainWindow, QPushButton, QVBoxLayout, QWidget
 
+from anki_export_thread import AnkiExportThread
 from apple_note_import import AppleNoteImport
 from audio_thread import AudioThread
 from components.dialogs.multi_selection import MultiSelectionDialog
@@ -46,7 +47,7 @@ class MainWindow(QMainWindow):
     def receive_words(self, words):
         print(words)
         # self.word_lookup_thread = QThread()
-        self.word_lookup = WordLookupWorker(["bird"])
+        self.word_lookup = WordLookupWorker(["bird", "cat"])
         self.word_lookup.multi_definitions.connect(self.select_definitions)
         self.word_lookup.multi_words.connect(self.select_word)
         self.user_definition_selection.connect(
@@ -93,7 +94,15 @@ class MainWindow(QMainWindow):
     def receive_defined_words(self, words):
         print("defined words", words)
         self.audio_thread = AudioThread(words, "./")
+        self.audio_thread.succeeded_errored_words.connect(self.receive_audio_words)
         self.audio_thread.start()
 
     def receive_skipped_words(self, words):
         print("skipped words", words)
+
+    def receive_audio_words(self, succeeded_words, errored_words):
+        print(succeeded_words, errored_words)
+        self.anki_thread = AnkiExportThread(
+            succeeded_words, "English Words", "English Vocab"
+        )
+        self.anki_thread.start()

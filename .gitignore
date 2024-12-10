@@ -16,3 +16,4 @@ test.py
 
 .DS_Store
 .venv/*
+*.mp3

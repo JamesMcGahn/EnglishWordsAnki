@@ -6,6 +6,8 @@ from google_audio_worker import GoogleAudioWorker
 class AudioThread(QThread):
     finished = Signal()
 
+    succeeded_errored_words = Signal(list, list)
+
     def __init__(self, words, folder_path=None):
         super().__init__()
         self.folder_path = folder_path
@@ -30,9 +32,11 @@ class AudioThread(QThread):
             self.worker.do_work()
 
         else:
+            print("succeeded", self.success_words)
+            print("************************")
+            print("errored", self.error_words)
+            self.succeeded_errored_words.emit(self.success_words, self.error_words)
             self.finished.emit()
-            print(self.success_words)
-            print(self.error_words)
 
     def success_download(self):
         word = self.words[self.word_index]
