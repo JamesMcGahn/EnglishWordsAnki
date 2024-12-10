@@ -24,7 +24,8 @@ class AppleNoteImport(QObject):
         if self.content:
 
             self.content = self.clean_html(self.content)
-            self.result.emit(self.content.split(",")[1:])
+            self.content = self.content.split(",")
+            self.result.emit(self.content)
         else:
             self.result.emit([])
         self.finished.emit()
@@ -51,6 +52,9 @@ class AppleNoteImport(QObject):
     def clean_html(self, content):
         """Removes HTML tags and returns clean text."""
         soup = BeautifulSoup(content, "html.parser")
+        title = soup.find("div")
+        if title.getText() == self.noteName:
+            title.extract()
         return soup.get_text(strip=True, separator=",")
 
     def clear_note_content(self, note_title):
