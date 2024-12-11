@@ -1,0 +1,22 @@
+<RCC>
+  <qresource prefix="">
+    <file>images/audio_off.png</file>
+    <file>images/audio_on.png</file>
+    <file>images/export_off.png</file>
+    <file>images/export_on.png</file>
+    <file>images/hamburger_off.png</file>
+    <file>images/hamburger_on.png</file>
+    <file>images/import_off.png</file>
+    <file>images/import_on.png</file>
+    <file>images/settings_off.png</file>
+    <file>images/settings_on.png</file>
+    <file>images/signout_off.png</file>
+    <file>images/signout_on.png</file>
+    <file>images/audio_black.png</file>
+    <file>images/export_black.png</file>
+    <file>images/hamburger_black.png</file>
+    <file>images/import_black.png</file>
+    <file>images/settings_black.png</file>
+    <file>images/signout_black.png</file>
+  </qresource>
+</RCC>
