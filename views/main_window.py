@@ -6,6 +6,7 @@ from anki_export_thread import AnkiExportThread
 from apple_note_import import AppleNoteImport
 from audio_thread import AudioThread
 from components.dialogs.multi_selection import MultiSelectionDialog
+from views.layout import CentralWidget
 from word_lookup_worker import WordLookupWorker
 
 
@@ -30,9 +31,13 @@ class MainWindow(QMainWindow):
         self.v_layout = QVBoxLayout()
         self.v_layout.addWidget(self.submit_btn)
         self.qwidget.setLayout(self.v_layout)
-        self.setCentralWidget(self.qwidget)
+
+        # self.setCentralWidget(self.qwidget)
 
         self.submit_btn.clicked.connect(self.import_words_from_apple_notes)
+
+        self.centralWidget = CentralWidget()
+        self.setCentralWidget(self.centralWidget)
 
     def import_words_from_apple_notes(self):
         self.appleNoteThread = QThread()
