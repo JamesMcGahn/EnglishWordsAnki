@@ -25,6 +25,7 @@ class ImportPage(QWidget):
     add_word_to_model = Signal(WordModel)
     save_words_to_model = Signal()
     to_define_word = Signal(str)
+    start_defining_words = Signal(int)
 
     def __init__(self):
         super().__init__()
@@ -174,3 +175,4 @@ class ImportPage(QWidget):
             self.to_define_word.emit(word.data(Qt.UserRole))
             self.list_widget.takeItem(self.list_widget.row(word))
         self.save_words_to_model.emit()
+        self.start_defining_words.emit(1)
