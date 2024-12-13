@@ -2,16 +2,10 @@ import uuid
 
 from PySide6.QtCore import Qt, QThread, Signal, Slot
 from PySide6.QtWidgets import (
-    QFileDialog,
-    QFormLayout,
     QHBoxLayout,
-    QLabel,
-    QLineEdit,
     QListWidget,
     QListWidgetItem,
     QPushButton,
-    QSizePolicy,
-    QTextEdit,
     QVBoxLayout,
     QWidget,
 )
@@ -67,19 +61,6 @@ class ImportPage(QWidget):
         self.list_widget = QListWidget()
         self.list_widget.setSelectionMode(QListWidget.MultiSelection)
 
-        # Rule Set Details
-        details_layout = QFormLayout()
-        details_layout.setFieldGrowthPolicy(
-            QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow
-        )
-        self.word_set_name = QLineEdit()
-        self.word_set_description = QTextEdit()
-        self.word_set_name_label = QLabel("Word:")
-        self.word_set_name_label.setAlignment(Qt.AlignLeft)
-
-        details_layout.addRow(self.word_set_name_label, self.word_set_name)
-
-        word_set_layout.addLayout(details_layout)
         self.import_btn = QPushButton("Import")
         self.start_define_btn = QPushButton("Define Selected Words")
         word_set_layout.addWidget(self.import_btn)
@@ -170,8 +151,6 @@ class ImportPage(QWidget):
         selected_words = self.list_widget.selectedItems()
 
         for word in selected_words:
-            print(word.text())
-            print(word.data(Qt.UserRole))
             self.to_define_word.emit(word.data(Qt.UserRole))
             self.list_widget.takeItem(self.list_widget.row(word))
         self.save_words_to_model.emit()

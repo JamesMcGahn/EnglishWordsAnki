@@ -14,13 +14,12 @@ class AppleNoteImport(QObject):
         self.content = None
         self.noteName = noteName
         self.start_work.connect(self.do_work)
-        print("hi")
 
     @Slot()
     def do_work(self):
         self.open_notes_app()
         self.content = self.get_note_content(self.noteName)
-        print("here")
+
         if self.content:
 
             self.content = self.clean_html(self.content)

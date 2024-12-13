@@ -40,7 +40,6 @@ class WordLookupWorker(QThread):
                     timeout=15,
                 )
                 res = response.json()
-                print(res)
 
                 # handle not finding word
 

@@ -1,18 +1,9 @@
-import uuid
-
-from PySide6.QtCore import Qt, QThread, Signal, Slot
+from PySide6.QtCore import Qt, Signal, Slot
 from PySide6.QtWidgets import (
-    QFileDialog,
-    QFormLayout,
     QHBoxLayout,
-    QLabel,
-    QLineEdit,
     QListWidget,
     QListWidgetItem,
-    QMainWindow,
     QPushButton,
-    QSizePolicy,
-    QTextEdit,
     QVBoxLayout,
     QWidget,
 )
@@ -73,28 +64,14 @@ class DefinePage(QWidget):
         self.defined_list_widget = QListWidget()
         self.skipped_list_widget = QListWidget()
 
-        # Rule Set Details
-        details_layout = QFormLayout()
-        details_layout.setFieldGrowthPolicy(
-            QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow
-        )
-        self.word_set_name = QLineEdit()
-        self.word_set_description = QTextEdit()
-        self.word_set_name_label = QLabel("Word:")
-        self.word_set_name_label.setAlignment(Qt.AlignLeft)
-
-        details_layout.addRow(self.word_set_name_label, self.word_set_name)
-
-        word_set_layout.addLayout(details_layout)
-        self.import_btn = QPushButton("Import")
-        self.start_define_btn = QPushButton("Define Selected Words")
-        word_set_layout.addWidget(self.import_btn)
-        word_set_layout.addWidget(self.start_define_btn)
-
         h_layout.addWidget(self.list_widget)
 
-        word_set_layout.addWidget(self.defined_list_widget)
-        word_set_layout.addWidget(self.skipped_list_widget)
+        self.bottom_list_widgets = QHBoxLayout()
+
+        self.bottom_list_widgets.addWidget(self.skipped_list_widget)
+        self.bottom_list_widgets.addWidget(self.defined_list_widget)
+
+        word_set_layout.addLayout(self.bottom_list_widgets)
 
         self.wordsModel = WordsModel()
         # SLOTS / SIGNALS
@@ -105,9 +82,6 @@ class DefinePage(QWidget):
 
         for word in self.wordsModel.to_be_defined_words:
             self.add_word(word)
-        print("111********************")
-        print(self.wordsModel.to_be_defined_words)
-        print("********************")
 
     def navigate_up(self):
         """
@@ -154,19 +128,12 @@ class DefinePage(QWidget):
         list_item.setData(Qt.UserRole, word.guid)
         self.list_widget.addItem(list_item)
         self.to_be_defined_queue.append(word)
-        print("222********************")
-        print(self.wordsModel.to_be_defined_words)
-        print("********************")
 
         if self.word_lookup_thread and self.word_lookup_thread.isRunning():
             self.add_word_to_define_queue.emit(self.word_lookup_thread.add_word_to_list)
 
     @Slot(int)
     def start_define_words(self):
-        print("here")
-        print("333********************")
-        print(self.wordsModel.to_be_defined_words)
-        print("********************")
         if self.word_lookup_thread and self.word_lookup_thread.isRunning():
             pass
         else:
@@ -182,7 +149,6 @@ class DefinePage(QWidget):
             self.word_lookup.start()
 
     def select_word(self, words):
-        print("********", words)
         choices = [
             f'{word["word"]} - { word["partOfSpeech"]} - {word["meaning"]}'
             for word in words
@@ -195,7 +161,6 @@ class DefinePage(QWidget):
         self.multi_dialog.exec()
 
     def select_definitions(self, word, definitions):
-        print("********", definitions)
         choices = [
             f"{definition.partOfSpeech} - {definition.definition}"
             for definition in definitions
@@ -210,28 +175,24 @@ class DefinePage(QWidget):
         self.user_word_selection.emit(choice[0])
 
     def receive_definition_selection(self, choices):
-        print(choices)
         self.user_definition_selection.emit(choices)
 
     def receive_defined_word(self, word):
-        print("defined words", word)
         list_item = QListWidgetItem(word.word)
         list_item.setData(Qt.UserRole, word.guid)
         self.defined_list_widget.addItem(list_item)
 
         for index in range(self.list_widget.count()):
             item = self.list_widget.item(index)
-            if item.data(Qt.UserRole) == word.guid:
+            if item and item.data(Qt.UserRole) == word.guid:
                 self.list_widget.takeItem(self.list_widget.row(item))
 
     def receive_skipped_word(self, word):
-        print("skipped words", word)
-
         list_item = QListWidgetItem(word.word)
         list_item.setData(Qt.UserRole, word.guid)
         self.skipped_list_widget.addItem(list_item)
 
         for index in range(self.list_widget.count()):
             item = self.list_widget.item(index)
-            if item.data(Qt.UserRole) == word.guid:
+            if item and item.data(Qt.UserRole) == word.guid:
                 self.list_widget.takeItem(self.list_widget.row(item))
