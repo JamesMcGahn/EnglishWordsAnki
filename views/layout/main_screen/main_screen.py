@@ -44,11 +44,11 @@ class MainScreen(QWidget):
         """
         btn_name = btn.objectName()
 
-        if btn_name.startswith("keys_btn_"):
+        if btn_name.startswith("import_btn_"):
             self.ui.stackedWidget.setCurrentIndex(0)
-        elif btn_name.startswith("rules_btn_"):
+        elif btn_name.startswith("audio_btn_"):
             self.ui.stackedWidget.setCurrentIndex(1)
-        elif btn_name.startswith("logs_btn_"):
+        elif btn_name.startswith("export_btn_"):
             self.ui.stackedWidget.setCurrentIndex(2)
         elif btn_name.startswith("settings_btn_"):
             self.ui.stackedWidget.setCurrentIndex(3)

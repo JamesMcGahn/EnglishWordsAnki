@@ -1,6 +1,8 @@
 from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QSizePolicy, QStackedWidget, QVBoxLayout, QWidget
 
+from views.pages import ImportPage
+
 
 class MainScreenView(QWidget):
     """
@@ -41,13 +43,13 @@ class MainScreenView(QWidget):
         self.stackedWidget = QStackedWidget(self)
         self.stackedWidget.setObjectName("main_screen_stacked")
         # Pages
-        self.rules_page = QWidget()
+        self.import_page = ImportPage()
         self.login_page = QWidget()
         self.settings_page = QWidget()
         self.logs_page = QWidget()
         # Add pages to stacked widget
+        self.stackedWidget.addWidget(self.import_page)
         self.stackedWidget.addWidget(self.login_page)
-        self.stackedWidget.addWidget(self.rules_page)
         self.stackedWidget.addWidget(self.logs_page)
         self.stackedWidget.addWidget(self.settings_page)
         # Add the stacked widget to the main layout

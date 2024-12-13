@@ -18,5 +18,7 @@
     <file>images/import_black.png</file>
     <file>images/settings_black.png</file>
     <file>images/signout_black.png</file>
+    <file>images/down_arrow_off_b.png</file>
+    <file>images/up_arrow_off_b.png</file>
   </qresource>
 </RCC>
