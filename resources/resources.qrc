@@ -20,5 +20,7 @@
     <file>images/signout_black.png</file>
     <file>images/down_arrow_off_b.png</file>
     <file>images/up_arrow_off_b.png</file>
+    <file>images/define_on.png</file>
+    <file>images/define_black.png</file>
   </qresource>
 </RCC>

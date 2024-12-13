@@ -57,6 +57,10 @@ class IconTextNavBarView(QWidget):
         self.import_btn_ict.setObjectName("import_btn_ict")
         self.icon_btn_layout.addWidget(self.import_btn_ict)
 
+        self.define_btn_ict = QPushButton(" Define")
+        self.define_btn_ict.setObjectName("define_btn_ict")
+        self.icon_btn_layout.addWidget(self.define_btn_ict)
+
         self.audio_btn_ict = QPushButton(" Audio")
         self.audio_btn_ict.setObjectName("audio_btn_ict")
         self.icon_btn_layout.addWidget(self.audio_btn_ict)
@@ -82,18 +86,35 @@ class IconTextNavBarView(QWidget):
         self.icon_text_nav_vlayout.addWidget(self.signout_btn_ict)
 
         icons = [
-            (self.import_btn_ict, ":/images/key_off.png", ":/images/key_on.png"),
-            (self.audio_btn_ict, ":/images/edit_off.png", ":/images/edit_on.png"),
-            (self.export_btn_ict, ":/images/log_off.png", ":/images/log_on.png"),
+            (
+                self.import_btn_ict,
+                ":/images/import_on.png",
+                ":/images/import_black.png",
+            ),
+            (
+                self.define_btn_ict,
+                ":/images/define_on.png",
+                ":/images/define_black.png",
+            ),
+            (
+                self.audio_btn_ict,
+                ":/images/audio_on.png",
+                ":/images/audio_black.png",
+            ),
+            (
+                self.export_btn_ict,
+                ":/images/export_on.png",
+                ":/images/export_black.png",
+            ),
             (
                 self.settings_btn_ict,
-                ":/images/settings_off.png",
                 ":/images/settings_on.png",
+                ":/images/settings_off.png",
             ),
             (
                 self.signout_btn_ict,
-                ":/images/signout_off.png",
                 ":/images/signout_on.png",
+                ":/images/signout_off.png",
             ),
         ]
         # Apply icons and styles to each button

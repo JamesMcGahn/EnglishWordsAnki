@@ -55,6 +55,10 @@ class IconOnlyNavBarView(QWidget):
         self.import_btn_ico.setObjectName("import_btn_ico")
         self.icon_btn_layout.addWidget(self.import_btn_ico)
 
+        self.define_btn_ico = QPushButton()
+        self.define_btn_ico.setObjectName("define_btn_ico")
+        self.icon_btn_layout.addWidget(self.define_btn_ico)
+
         self.audio_btn_ico = QPushButton()
         self.audio_btn_ico.setObjectName("audio_btn_ico")
         self.icon_btn_layout.addWidget(self.audio_btn_ico)
@@ -74,6 +78,11 @@ class IconOnlyNavBarView(QWidget):
                 self.import_btn_ico,
                 ":/images/import_on.png",
                 ":/images/import_black.png",
+            ),
+            (
+                self.define_btn_ico,
+                ":/images/define_on.png",
+                ":/images/define_black.png",
             ),
             (
                 self.audio_btn_ico,

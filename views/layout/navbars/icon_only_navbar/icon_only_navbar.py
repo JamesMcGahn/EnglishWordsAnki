@@ -45,6 +45,9 @@ class IconOnlyNavBar(QWidget):
         self.ui.import_btn_ico.toggled.connect(self.btn_checked)
         self.ui.import_btn_ico.clicked.connect(self.btn_clicked)
 
+        self.ui.define_btn_ico.toggled.connect(self.btn_checked)
+        self.ui.define_btn_ico.clicked.connect(self.btn_clicked)
+
         self.ui.audio_btn_ico.toggled.connect(self.btn_checked)
         self.ui.audio_btn_ico.clicked.connect(self.btn_clicked)
 
@@ -110,6 +113,8 @@ class IconOnlyNavBar(QWidget):
                 self.ui.import_btn_ico.setChecked(checked)
             case "audio_btn_ict":
                 self.ui.audio_btn_ico.setChecked(checked)
+            case "define_btn_ict":
+                self.ui.define_btn_ico.setChecked(checked)
             case "export_btn_ict":
                 self.ui.export_btn_ico.setChecked(checked)
             case "settings_btn_ict":

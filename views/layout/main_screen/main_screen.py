@@ -31,6 +31,14 @@ class MainScreen(QWidget):
 
         self.setObjectName("main_screen")
 
+        self.ui.import_page.start_defining_words.connect(
+            self.ui.define_page.start_define_words
+        )
+        self.ui.import_page.start_defining_words.connect(self.int_change_page)
+
+    def int_change_page(self, index):
+        self.ui.stackedWidget.setCurrentIndex(index)
+
     @Slot(QPushButton)
     def change_page(self, btn: QPushButton) -> None:
         """
@@ -46,11 +54,13 @@ class MainScreen(QWidget):
 
         if btn_name.startswith("import_btn_"):
             self.ui.stackedWidget.setCurrentIndex(0)
-        elif btn_name.startswith("audio_btn_"):
+        elif btn_name.startswith("define_btn_"):
             self.ui.stackedWidget.setCurrentIndex(1)
-        elif btn_name.startswith("export_btn_"):
+        elif btn_name.startswith("audio_btn_"):
             self.ui.stackedWidget.setCurrentIndex(2)
-        elif btn_name.startswith("settings_btn_"):
+        elif btn_name.startswith("export_btn_"):
             self.ui.stackedWidget.setCurrentIndex(3)
+        elif btn_name.startswith("settings_btn_"):
+            self.ui.stackedWidget.setCurrentIndex(4)
         elif btn_name.startswith("signout_btn"):
             self.close_main_window.emit()
