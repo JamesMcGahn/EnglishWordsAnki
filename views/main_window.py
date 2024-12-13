@@ -2,12 +2,9 @@ from PySide6.QtCore import QSize, QThread, Signal
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QMainWindow, QPushButton, QVBoxLayout, QWidget
 
-from anki_export_thread import AnkiExportThread
-from apple_note_import import AppleNoteImport
-from audio_thread import AudioThread
 from components.dialogs.multi_selection import MultiSelectionDialog
+from core import AnkiExportThread, AppleNoteImport, AudioThread, WordLookupWorker
 from views.layout import CentralWidget
-from word_lookup_worker import WordLookupWorker
 
 
 class MainWindow(QMainWindow):

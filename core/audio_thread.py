@@ -1,6 +1,6 @@
 from PySide6.QtCore import QThread, Signal
 
-from google_audio_worker import GoogleAudioWorker
+from .google_audio_worker import GoogleAudioWorker
 
 
 class AudioThread(QThread):
