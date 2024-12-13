@@ -48,6 +48,11 @@ class WordLookupWorker(QThread):
 
                 word_choices = []
 
+                if "title" in res and res["title"] == "No Definitions Found":
+                    list_word.status = Status.SKIPPED_DEFINED
+                    self.skipped_word.emit(list_word)
+                    continue
+
                 for word in res:
                     word_choice = {
                         "word": word["word"],
@@ -66,12 +71,10 @@ class WordLookupWorker(QThread):
                         self._wait_condition.wait(self._mutex)
 
                 if self.word_selection == len(word_choices):
-                    print("Skipping word ", list_word)
                     list_word.status = Status.SKIPPED_DEFINED
                     self.skipped_word.emit(list_word)
                     continue
 
-                print("*******************")
                 if len(res) > 1:
 
                     word = res[self.word_selection]
@@ -92,8 +95,6 @@ class WordLookupWorker(QThread):
                         )
                         all_meanings.append(a_meaning)
 
-                print("all-meanings", all_meanings)
-
                 with QMutexLocker(self._mutex):
                     if len(all_meanings) > 1:
                         self.multi_definitions.emit(list_word.word, all_meanings)
@@ -105,7 +106,6 @@ class WordLookupWorker(QThread):
                 if len(all_meanings) > 1 and self.multi_selection[0] == len(
                     all_meanings
                 ):
-                    print("Skipping word ", list_word)
                     list_word.status = Status.SKIPPED_DEFINED
                     self.skipped_word.emit(list_word)
                     continue
@@ -115,9 +115,7 @@ class WordLookupWorker(QThread):
 
                 if len(all_meanings) == 1:
                     self.multi_selection = [0]
-                print("cactus1", all_meanings)
                 all_meanings = [all_meanings[i] for i in self.multi_selection]
-                print("cactus", all_meanings)
                 word_name = word["word"]
                 definition_string = ""
                 synonyms = ""
@@ -159,19 +157,16 @@ class WordLookupWorker(QThread):
                 self._wait_condition.wait(self._mutex)
 
     def resume(self):
-        print("sssss")
         with QMutexLocker(self._mutex):  # Automatic lock and unlock
             self._paused = False
             self._wait_condition.wakeAll()
 
     @Slot(list)
     def get_user_definition_selection(self, choices):
-        print("here 2")
         self.multi_selection = choices
         self.resume()
 
     @Slot(int)
     def get_user_word_selection(self, choice):
-        print("here 1")
         self.word_selection = choice
         self.resume()
