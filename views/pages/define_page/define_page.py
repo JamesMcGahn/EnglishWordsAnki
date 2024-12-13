@@ -9,9 +9,8 @@ from PySide6.QtWidgets import (
 )
 
 from components.dialogs.multi_selection import MultiSelectionDialog
-from components.helpers import WidgetFactory
 from core import WordLookupWorker
-from models import WordModel, WordsModel
+from models import Status, WordModel, WordsModel
 
 
 class DefinePage(QWidget):
@@ -24,90 +23,85 @@ class DefinePage(QWidget):
         super().__init__()
         self.to_be_defined_queue = []
         word_set_layout = QVBoxLayout(self)
-        h_layout = QHBoxLayout()
-
-        self.arrow_up = QPushButton("")
-        self.arrow_down = QPushButton("")
-        self.arrow_down.setCursor(Qt.PointingHandCursor)
-        self.arrow_up.setCursor(Qt.PointingHandCursor)
 
         self.word_lookup_thread = None
 
-        WidgetFactory.create_icon(
-            self.arrow_up,
-            ":/images/up_arrow_off_b.png",
-            49,
-            20,
-            False,
-            ":/images/up_arrow_on.png",
-            False,
-        )
-        WidgetFactory.create_icon(
-            self.arrow_down,
-            ":/images/down_arrow_off_b.png",
-            49,
-            20,
-            False,
-            ":/images/down_arrow_on.png",
-            False,
-        )
-        # Nav Buttons
-        nav_box = QVBoxLayout()
-        nav_box.addWidget(self.arrow_up)
-        nav_box.addWidget(self.arrow_down)
-
-        h_layout.addLayout(nav_box)
-        word_set_layout.addLayout(h_layout)
-
         # List Widget
+        define_queue_qv = QVBoxLayout()
+        word_set_layout.addLayout(define_queue_qv)
         self.list_widget = QListWidget()
-        self.defined_list_widget = QListWidget()
-        self.skipped_list_widget = QListWidget()
+        queue_buttons_layout = QHBoxLayout()
+        define_queue_qv.addWidget(self.list_widget)
+        define_queue_qv.addLayout(queue_buttons_layout)
 
-        h_layout.addWidget(self.list_widget)
+        self.start_define = QPushButton("Start Defining")
+        queue_buttons_layout.addWidget(self.start_define)
 
         self.bottom_list_widgets = QHBoxLayout()
 
-        self.bottom_list_widgets.addWidget(self.skipped_list_widget)
-        self.bottom_list_widgets.addWidget(self.defined_list_widget)
+        self.skipped_box = QVBoxLayout()
+        self.definded_box = QVBoxLayout()
+
+        self.bottom_list_widgets.addLayout(self.skipped_box)
+        self.bottom_list_widgets.addLayout(self.definded_box)
+
+        # SKIPPED BOX
+        self.skipped_list_widget = QListWidget()
+        self.skipped_box.addWidget(self.skipped_list_widget)
+        self.edit_word_btn = QPushButton("Edit Word")
+        self.move_word_to_queue_btn = QPushButton("Move Word to Queue")
+        self.h_skipped_layout = QHBoxLayout()
+        self.h_skipped_layout.addWidget(self.edit_word_btn)
+        self.h_skipped_layout.addWidget(self.move_word_to_queue_btn)
+        self.skipped_box.addLayout(self.h_skipped_layout)
+
+        # DEFINED BOX
+        self.defined_list_widget = QListWidget()
+        self.definded_box.addWidget(self.defined_list_widget)
+        self.h_defined_layout = QHBoxLayout()
+
+        get_audio_btn = QPushButton("Get Audio for Words")
+        self.h_defined_layout.addWidget(get_audio_btn)
+
+        self.definded_box.addLayout(self.h_defined_layout)
 
         word_set_layout.addLayout(self.bottom_list_widgets)
 
         self.wordsModel = WordsModel()
         # SLOTS / SIGNALS
-        self.arrow_up.clicked.connect(self.navigate_up)
-        self.arrow_down.clicked.connect(self.navigate_down)
-
+        self.start_define.clicked.connect(self.start_define_words)
         self.wordsModel.word_added_to_be_defined.connect(self.add_word)
+        self.edit_word_btn.clicked.connect(self.edit_skipped_word)
+        self.move_word_to_queue_btn.clicked.connect(self.move_word_to_queue)
 
         for word in self.wordsModel.to_be_defined_words:
             self.add_word(word)
 
-    def navigate_up(self):
-        """
-        Moves the selection up in the rule set list.
-        If at the top, it moves selection to the last item in the list
+    def edit_skipped_word(self):
+        item = self.skipped_list_widget.currentItem()
+        guid = item.data(Qt.UserRole)
+        word = [
+            word for word in self.wordsModel.skipped_defined_words if word.guid == guid
+        ]
+        if word:
+            pass
 
-        Returns:
-            None: This function does not return a value.
-        """
-        if self.list_widget.currentRow() > 0:
-            self.list_widget.setCurrentRow(self.list_widget.currentRow() - 1)
-        else:
-            self.list_widget.setCurrentRow(self.list_widget.count() - 1)
-
-    def navigate_down(self):
-        """
-        Moves the selection down in the rule set list.
-        If at the bottom, it moves selection to the first item in the list
-
-        Returns:
-            None: This function does not return a value.
-        """
-        if self.list_widget.currentRow() != self.list_widget.count() - 1:
-            self.list_widget.setCurrentRow(self.list_widget.currentRow() + 1)
-        else:
-            self.list_widget.setCurrentRow(0)
+    def move_word_to_queue(self):
+        item = self.skipped_list_widget.currentItem()
+        guid = item.data(Qt.UserRole)
+        word = [
+            word for word in self.wordsModel.skipped_defined_words if word.guid == guid
+        ]
+        if word:
+            change_word = word[0]
+            change_word.status = Status.TO_BE_DEFINED
+            self.add_word(change_word)
+            for index in range(self.skipped_list_widget.count()):
+                item = self.skipped_list_widget.item(index)
+                if item and item.data(Qt.UserRole) == change_word.guid:
+                    self.skipped_list_widget.takeItem(
+                        self.skipped_list_widget.row(item)
+                    )
 
     @Slot(WordModel)
     def add_word(self, word: WordModel) -> None:
@@ -127,7 +121,6 @@ class DefinePage(QWidget):
         list_item = QListWidgetItem(word.word)
         list_item.setData(Qt.UserRole, word.guid)
         self.list_widget.addItem(list_item)
-        self.to_be_defined_queue.append(word)
 
         if self.word_lookup_thread and self.word_lookup_thread.isRunning():
             self.add_word_to_define_queue.emit(self.word_lookup_thread.add_word_to_list)
@@ -135,8 +128,9 @@ class DefinePage(QWidget):
     @Slot(int)
     def start_define_words(self):
         if self.word_lookup_thread and self.word_lookup_thread.isRunning():
-            pass
+            return
         else:
+            self.start_define.setDisabled(True)
             self.word_lookup = WordLookupWorker(self.wordsModel.to_be_defined_words)
             self.word_lookup.multi_definitions.connect(self.select_definitions)
             self.word_lookup.multi_words.connect(self.select_word)
@@ -146,6 +140,9 @@ class DefinePage(QWidget):
             self.user_word_selection.connect(self.word_lookup.get_user_word_selection)
             self.word_lookup.defined_word.connect(self.receive_defined_word)
             self.word_lookup.skipped_word.connect(self.receive_skipped_word)
+            self.word_lookup.finished.connect(
+                lambda: self.start_define.setDisabled(False)
+            )
             self.word_lookup.start()
 
     def select_word(self, words):
