@@ -47,7 +47,8 @@ class MultiSelectionDialog(QWidget):
 
                 button_id = self.ui.select_btn_group.id(button)
                 selected_ids.append(button_id)
-        print(selected_ids)
+        if not selected_ids:
+            selected_ids = [len(self.selections)]
         self.md_multi_def_signal.emit(selected_ids)
         self.ui.accept()
 
