@@ -1,17 +1,18 @@
 import requests
 from PySide6.QtCore import QMutex, QMutexLocker, QThread, QWaitCondition, Signal, Slot
 
-from models import DefinitionModel, WordModel
+from models import DefinitionModel, Status, WordModel
 
 
 class WordLookupWorker(QThread):
     result = Signal(list)
     finished = Signal()
     start_work = Signal()
-    multi_definitions = Signal(list)
+    multi_definitions = Signal(str, list)
     multi_words = Signal(list)
-    defined_words = Signal(list)
-    skipped_words = Signal(list)
+
+    defined_word = Signal(WordModel)
+    skipped_word = Signal(WordModel)
 
     def __init__(self, word_list):
         super().__init__()
@@ -35,7 +36,7 @@ class WordLookupWorker(QThread):
             try:
 
                 response = requests.get(
-                    f"https://api.dictionaryapi.dev/api/v2/entries/en/{list_word}",
+                    f"https://api.dictionaryapi.dev/api/v2/entries/en/{list_word.word}",
                     timeout=15,
                 )
                 res = response.json()
@@ -66,11 +67,17 @@ class WordLookupWorker(QThread):
 
                 if self.word_selection == len(word_choices):
                     print("Skipping word ", list_word)
-                    self.skipped_word_list.append(list_word)
+                    list_word.status = Status.SKIPPED_DEFINED
+                    self.skipped_word.emit(list_word)
                     continue
 
                 print("*******************")
-                word = res[self.word_selection]
+                if len(res) > 1:
+
+                    word = res[self.word_selection]
+                else:
+                    word = res[0]
+
                 meanings = word["meanings"]
 
                 all_meanings = []
@@ -89,20 +96,26 @@ class WordLookupWorker(QThread):
 
                 with QMutexLocker(self._mutex):
                     if len(all_meanings) > 1:
-                        self.multi_definitions.emit(all_meanings)
+                        self.multi_definitions.emit(list_word.word, all_meanings)
                         self._paused = True
 
                     while self._paused:
                         self._wait_condition.wait(self._mutex)
 
-                if self.multi_selection[0] == len(all_meanings):
+                if len(all_meanings) > 1 and self.multi_selection[0] == len(
+                    all_meanings
+                ):
                     print("Skipping word ", list_word)
-                    self.skipped_word_list.append(list_word)
+                    list_word.status = Status.SKIPPED_DEFINED
+                    self.skipped_word.emit(list_word)
                     continue
 
                 def add_non_duplicates(original_list, new_items):
                     return list(set(original_list).union(new_items))
 
+                if len(all_meanings) == 1:
+                    self.multi_selection = [0]
+                print("cactus1", all_meanings)
                 all_meanings = [all_meanings[i] for i in self.multi_selection]
                 print("cactus", all_meanings)
                 word_name = word["word"]
@@ -119,19 +132,23 @@ class WordLookupWorker(QThread):
                     synonyms = add_non_duplicates(synonyms, meaning.synonyms)
                     example += meaning.example
 
-                new_word = WordModel(
-                    word_name,
-                    definition_string,
-                    audio,
-                    ", ".join(meaning.synonyms),
-                    example,
-                )
-                print("&&&&&&&&&&&&", new_word)
-                self.words.append(new_word)
+                list_word.status = Status.DEFINDED
+                list_word.word = word_name
+                list_word.definition = definition_string
+                list_word.audio = audio
+                list_word.synonyms = ", ".join(meaning.synonyms)
+                list_word.example = example
+
+                self.defined_word.emit(list_word)
 
             except Exception as e:
                 print(e)
-        self.defined_words.emit(self.words)
+        # self.defined_words.emit(self.words)
+
+    @Slot(WordModel)
+    def add_word_to_list(self, word):
+        with QMutexLocker(self.mutex):
+            self.word_list.append(word)
 
     def pause_if_needed(self, checkVar):
         with QMutexLocker(self._mutex):
