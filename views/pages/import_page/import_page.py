@@ -16,14 +16,15 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from apple_note_import import AppleNoteImport
 from components.helpers import WidgetFactory
-from models import WordModel, WordsModel
+from core.apple_note_import import AppleNoteImport
+from models import Status, WordModel, WordsModel
 
 
 class ImportPage(QWidget):
     add_word_to_model = Signal(WordModel)
     save_words_to_model = Signal()
+    to_define_word = Signal(str)
 
     def __init__(self):
         super().__init__()
@@ -63,6 +64,7 @@ class ImportPage(QWidget):
 
         # List Widget
         self.list_widget = QListWidget()
+        self.list_widget.setSelectionMode(QListWidget.MultiSelection)
 
         # Rule Set Details
         details_layout = QFormLayout()
@@ -78,7 +80,9 @@ class ImportPage(QWidget):
 
         word_set_layout.addLayout(details_layout)
         self.import_btn = QPushButton("Import")
+        self.start_define_btn = QPushButton("Define Selected Words")
         word_set_layout.addWidget(self.import_btn)
+        word_set_layout.addWidget(self.start_define_btn)
 
         h_layout.addWidget(self.list_widget)
 
@@ -89,8 +93,11 @@ class ImportPage(QWidget):
         self.arrow_down.clicked.connect(self.navigate_down)
         self.add_word_to_model.connect(self.wordsModel.add_word)
         self.wordsModel.word_added.connect(self.add_word)
+        self.save_words_to_model.connect(self.wordsModel.save_words)
+        self.start_define_btn.clicked.connect(self.start_define_words)
+        self.to_define_word.connect(self.wordsModel.add_word_to_be_defined)
 
-        for word in self.wordsModel.words:
+        for word in self.wordsModel.undefined_words:
             self.add_word(word)
 
     def navigate_up(self):
@@ -154,6 +161,16 @@ class ImportPage(QWidget):
 
     def receive_words(self, words):
         for word in words:
-            new_word = WordModel(str(uuid.uuid4()), word, "", "", "", "")
+            new_word = WordModel(Status.ADDED, str(uuid.uuid4()), word, "", "", "", "")
             self.add_word_to_model.emit(new_word)
+        self.save_words_to_model.emit()
+
+    def start_define_words(self):
+        selected_words = self.list_widget.selectedItems()
+
+        for word in selected_words:
+            print(word.text())
+            print(word.data(Qt.UserRole))
+            self.to_define_word.emit(word.data(Qt.UserRole))
+            self.list_widget.takeItem(self.list_widget.row(word))
         self.save_words_to_model.emit()

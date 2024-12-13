@@ -6,7 +6,7 @@ from PySide6.QtCore import QObject, Signal, Slot
 from base import QSingleton
 from services.settings import AppSettings
 
-from .word_model import WordModel
+from .word_model import Status, WordModel
 
 
 class WordsModel(QObject, metaclass=QSingleton):
@@ -30,15 +30,17 @@ class WordsModel(QObject, metaclass=QSingleton):
     word_added = Signal(WordModel)
     word_updated = Signal(WordModel)
     word_deleted = Signal(str)
+    word_added_to_be_defined = Signal(WordModel)
 
     def __init__(self):
         """
-        Initializes the RulesModel with an empty list of rules and loads saved rules
+        Initializes the WordsModel with an empty list of rules and loads saved rules
         from persistent storage.
         """
         super().__init__()
         self._words = []
         self.settings = AppSettings()
+        # self.reset_model()
         self.init_words_model()
 
     @property
@@ -50,6 +52,26 @@ class WordsModel(QObject, metaclass=QSingleton):
             list: The list of current rule sets.
         """
         return self._words
+
+    @property
+    def undefined_words(self) -> List:
+        """
+        Property to access the list of rule set.
+
+        Returns:
+            list: The list of current rule sets.
+        """
+        return [word for word in self._words if word.status == Status.ADDED]
+
+    @property
+    def to_be_defined_words(self) -> List:
+        """
+        Property to access the list of rule set.
+
+        Returns:
+            list: The list of current rule sets.
+        """
+        return [word for word in self._words if word.status == Status.TO_BE_DEFINED]
 
     @Slot(WordModel)
     def add_word(self, word: WordModel) -> None:
@@ -145,3 +167,19 @@ class WordsModel(QObject, metaclass=QSingleton):
             saved_word = WordModel(**word)
             self._words.append(saved_word)
         self.settings.end_group()
+
+    @Slot(str)
+    def add_word_to_be_defined(self, guid):
+        print("slot", guid)
+        updated_status = []
+        for word in self._words:
+            if word.guid == guid:
+                updated_word = word
+                updated_word.status = Status.TO_BE_DEFINED
+                self.word_added_to_be_defined.emit(word)
+                updated_status.append(updated_word)
+                print(updated_word)
+            else:
+                updated_status.append(word)
+
+        self._words = updated_status
