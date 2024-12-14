@@ -4,11 +4,11 @@ import google
 from google.cloud import texttospeech
 from PySide6.QtCore import QObject, Signal, Slot
 
-from path_manager import PathManager
+from utils.files.path_manager import PathManager
 
 
 class GoogleAudioWorker(QObject):
-    success = Signal()
+    success = Signal(str)
     error = Signal(str)
     finised = Signal()
     start_work = Signal()
@@ -60,7 +60,7 @@ class GoogleAudioWorker(QObject):
             with open(path, "wb") as out:
                 out.write(response.audio_content)
             print("wrote file")
-            self.success.emit()
+            self.success.emit(path)
 
         except google.api_core.exceptions.ServiceUnavailable as e:
             if self.google_tried is False:
