@@ -86,15 +86,20 @@ class DefinePage(QWidget):
 
     def edit_skipped_word(self):
         item = self.skipped_list_widget.currentItem()
-        guid = item.data(Qt.UserRole)
-        word = [
-            word for word in self.wordsModel.skipped_defined_words if word.guid == guid
-        ]
-        if word:
-            edit_word = word[0]
-            self.edit_word_dialog = EditWordDialog(edit_word, "Edit Word", "Edit Word")
-            self.edit_word_dialog.updated_word.connect(self.update_edited_word)
-            self.edit_word_dialog.exec()
+        if item:
+            guid = item.data(Qt.UserRole)
+            word = [
+                word
+                for word in self.wordsModel.skipped_defined_words
+                if word.guid == guid
+            ]
+            if word:
+                edit_word = word[0]
+                self.edit_word_dialog = EditWordDialog(
+                    edit_word, "Edit Word", "Edit Word"
+                )
+                self.edit_word_dialog.updated_word.connect(self.update_edited_word)
+                self.edit_word_dialog.exec()
 
     def update_edited_word(self, word):
         print(word)
@@ -108,19 +113,22 @@ class DefinePage(QWidget):
 
     def move_word_to_queue(self):
         item = self.skipped_list_widget.currentItem()
-        guid = item.data(Qt.UserRole)
-        word = [
-            word for word in self.wordsModel.skipped_defined_words if word.guid == guid
-        ]
-        if word:
-            change_word = word[0]
-            self.change_status.emit(change_word.guid, Status.TO_BE_DEFINED)
-            for index in range(self.skipped_list_widget.count()):
-                item = self.skipped_list_widget.item(index)
-                if item and item.data(Qt.UserRole) == change_word.guid:
-                    self.skipped_list_widget.takeItem(
-                        self.skipped_list_widget.row(item)
-                    )
+        if item:
+            guid = item.data(Qt.UserRole)
+            word = [
+                word
+                for word in self.wordsModel.skipped_defined_words
+                if word.guid == guid
+            ]
+            if word:
+                change_word = word[0]
+                self.change_status.emit(change_word.guid, Status.TO_BE_DEFINED)
+                for index in range(self.skipped_list_widget.count()):
+                    item = self.skipped_list_widget.item(index)
+                    if item and item.data(Qt.UserRole) == change_word.guid:
+                        self.skipped_list_widget.takeItem(
+                            self.skipped_list_widget.row(item)
+                        )
 
     @Slot(WordModel)
     def add_word(self, word: WordModel) -> None:
