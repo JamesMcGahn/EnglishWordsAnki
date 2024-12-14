@@ -8,7 +8,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from components.dialogs.multi_selection import MultiSelectionDialog
+from components.dialogs import EditWordDialog, MultiSelectionDialog
 from core import WordLookupWorker
 from models import Status, WordModel, WordsModel
 
@@ -18,6 +18,7 @@ class DefinePage(QWidget):
     user_definition_selection = Signal(list)
     user_word_selection = Signal(int)
     add_word_to_define_queue = Signal(WordModel)
+    update_word_model = Signal(str, WordModel)
 
     def __init__(self):
         super().__init__()
@@ -73,6 +74,8 @@ class DefinePage(QWidget):
         self.wordsModel.word_added_to_be_defined.connect(self.add_word)
         self.edit_word_btn.clicked.connect(self.edit_skipped_word)
         self.move_word_to_queue_btn.clicked.connect(self.move_word_to_queue)
+        self.save_words_to_model.connect(self.wordsModel.save_words)
+        self.update_word_model.connect(self.wordsModel.update_word)
 
         for word in self.wordsModel.to_be_defined_words:
             self.add_word(word)
@@ -84,7 +87,20 @@ class DefinePage(QWidget):
             word for word in self.wordsModel.skipped_defined_words if word.guid == guid
         ]
         if word:
-            pass
+            edit_word = word[0]
+            self.edit_word_dialog = EditWordDialog(edit_word, "Edit Word", "Edit Word")
+            self.edit_word_dialog.updated_word.connect(self.update_edited_word)
+            self.edit_word_dialog.exec()
+
+    def update_edited_word(self, word):
+        print(word)
+        word.status = Status.TO_BE_DEFINED
+        self.add_word(word)
+        self.update_word_model.emit(word.guid, word)
+        for index in range(self.skipped_list_widget.count()):
+            item = self.skipped_list_widget.item(index)
+            if item and item.data(Qt.UserRole) == word.guid:
+                self.skipped_list_widget.takeItem(self.skipped_list_widget.row(item))
 
     def move_word_to_queue(self):
         item = self.skipped_list_widget.currentItem()
@@ -143,6 +159,7 @@ class DefinePage(QWidget):
             self.word_lookup.finished.connect(
                 lambda: self.start_define.setDisabled(False)
             )
+            self.word_lookup.finished.connect(lambda: self.save_words_to_model.emit())
             self.word_lookup.start()
 
     def select_word(self, words):
@@ -178,7 +195,7 @@ class DefinePage(QWidget):
         list_item = QListWidgetItem(word.word)
         list_item.setData(Qt.UserRole, word.guid)
         self.defined_list_widget.addItem(list_item)
-
+        self.update_word_model.emit(word.guid, word)
         for index in range(self.list_widget.count()):
             item = self.list_widget.item(index)
             if item and item.data(Qt.UserRole) == word.guid:
