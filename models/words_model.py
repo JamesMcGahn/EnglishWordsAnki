@@ -40,7 +40,8 @@ class WordsModel(QObject, metaclass=QSingleton):
         super().__init__()
         self._words = []
         self.settings = AppSettings()
-        # self.reset_model()
+        # #TODO reset enabled for test - remove line when done
+        self.reset_model()
         self.init_words_model()
 
     @property
@@ -72,6 +73,16 @@ class WordsModel(QObject, metaclass=QSingleton):
             list: The list of current rule sets.
         """
         return [word for word in self._words if word.status == Status.TO_BE_DEFINED]
+
+    @property
+    def skipped_defined_words(self) -> List:
+        """
+        Property to access the list of rule set.
+
+        Returns:
+            list: The list of current rule sets.
+        """
+        return [word for word in self._words if word.status == Status.SKIPPED_DEFINED]
 
     @Slot(WordModel)
     def add_word(self, word: WordModel) -> None:
@@ -125,7 +136,7 @@ class WordsModel(QObject, metaclass=QSingleton):
                     words.append(word)
                     self.word_updated.emit(word)
 
-            self.words = words
+            self._words = words
 
     @Slot()
     def reset_model(self) -> None:
@@ -170,7 +181,6 @@ class WordsModel(QObject, metaclass=QSingleton):
 
     @Slot(str)
     def add_word_to_be_defined(self, guid):
-        print("slot", guid)
         updated_status = []
         for word in self._words:
             if word.guid == guid:
@@ -178,7 +188,6 @@ class WordsModel(QObject, metaclass=QSingleton):
                 updated_word.status = Status.TO_BE_DEFINED
                 self.word_added_to_be_defined.emit(word)
                 updated_status.append(updated_word)
-                print(updated_word)
             else:
                 updated_status.append(word)
 
