@@ -21,5 +21,6 @@ class WordModel:
     word: str
     definition: str
     audio: str
+    audio_path: str
     synonyms: str
     example: str

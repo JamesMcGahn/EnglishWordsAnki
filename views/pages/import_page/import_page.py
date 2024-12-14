@@ -143,7 +143,9 @@ class ImportPage(QWidget):
 
     def receive_words(self, words):
         for word in words:
-            new_word = WordModel(Status.ADDED, str(uuid.uuid4()), word, "", "", "", "")
+            new_word = WordModel(
+                Status.ADDED, str(uuid.uuid4()), word, "", "", "", "", ""
+            )
             self.add_word_to_model.emit(new_word)
         self.save_words_to_model.emit()
 
