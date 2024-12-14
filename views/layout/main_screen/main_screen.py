@@ -19,6 +19,7 @@ class MainScreen(QWidget):
     """
 
     close_main_window = Signal()
+    page_changed = Signal(int)
 
     def __init__(self):
         """
@@ -35,9 +36,11 @@ class MainScreen(QWidget):
             self.ui.define_page.start_define_words
         )
         self.ui.import_page.start_defining_words.connect(self.int_change_page)
+        self.ui.define_page.start_audio_for_words.connect(self.int_change_page)
 
     def int_change_page(self, index):
         self.ui.stackedWidget.setCurrentIndex(index)
+        self.page_changed.emit(index)
 
     @Slot(QPushButton)
     def change_page(self, btn: QPushButton) -> None:

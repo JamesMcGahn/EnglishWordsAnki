@@ -49,6 +49,8 @@ class CentralWidget(QWidget):
         )
         self.main_screen_widget.close_main_window.connect(self.close_icon_clicked)
 
+        self.main_screen_widget.page_changed.connect(self.page_changed)
+
     def paintEvent(self, event: QPaintEvent) -> None:
         """
         Custom paint event to draw a linear gradient background on the central widget.
@@ -67,6 +69,17 @@ class CentralWidget(QWidget):
         gradient.setColorAt(1, "#003366")
         painter.setBrush(gradient)
         painter.drawRect(self.rect())
+
+    def page_changed(self, index):
+        match index:
+            case 0:
+                self.icon_only_widget.ui.import_btn_ico.setChecked(True)
+            case 1:
+                self.icon_only_widget.ui.define_btn_ico.setChecked(True)
+            case 2:
+                self.icon_only_widget.ui.audio_btn_ico.setChecked(True)
+            case 3:
+                self.icon_only_widget.ui.export_btn_ico.setChecked(True)
 
     @Slot()
     def close_icon_clicked(self) -> None:

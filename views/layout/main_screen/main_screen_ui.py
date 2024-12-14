@@ -1,7 +1,7 @@
 from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QSizePolicy, QStackedWidget, QVBoxLayout, QWidget
 
-from views.pages import DefinePage, ImportPage
+from views.pages import AudioPage, DefinePage, ImportPage
 
 
 class MainScreenView(QWidget):
@@ -45,7 +45,7 @@ class MainScreenView(QWidget):
         # Pages
         self.import_page = ImportPage()
         self.define_page = DefinePage()
-        self.audio_page = QWidget()
+        self.audio_page = AudioPage()
         self.export_page = QWidget()
         self.settings_page = QWidget()
         self.logs_page = QWidget()
