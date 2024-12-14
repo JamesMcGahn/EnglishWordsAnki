@@ -1,4 +1,5 @@
+from .audio_page import AudioPage
 from .define_page import DefinePage
 from .import_page import ImportPage
 
-__all__ = ["ImportPage", "DefinePage"]
+__all__ = ["ImportPage", "DefinePage", "AudioPage"]

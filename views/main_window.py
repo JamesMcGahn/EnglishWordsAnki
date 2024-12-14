@@ -34,15 +34,6 @@ class MainWindow(QMainWindow):
         self.centralWidget = CentralWidget()
         self.setCentralWidget(self.centralWidget)
 
-    def receive_defined_words(self, words):
-        print("defined words", words)
-        self.audio_thread = AudioThread(words, "./")
-        self.audio_thread.succeeded_errored_words.connect(self.receive_audio_words)
-        self.audio_thread.start()
-
-    def receive_skipped_words(self, words):
-        print("skipped words", words)
-
     def receive_audio_words(self, succeeded_words, errored_words):
         print(succeeded_words, errored_words)
         self.anki_thread = AnkiExportThread(
