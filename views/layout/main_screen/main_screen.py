@@ -37,6 +37,9 @@ class MainScreen(QWidget):
         )
         self.ui.import_page.start_defining_words.connect(self.int_change_page)
         self.ui.define_page.start_audio_for_words.connect(self.int_change_page)
+        self.ui.define_page.start_audio_for_words.connect(
+            self.ui.audio_page.start_audio_words
+        )
 
     def int_change_page(self, index):
         self.ui.stackedWidget.setCurrentIndex(index)
