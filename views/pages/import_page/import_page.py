@@ -18,7 +18,7 @@ from models import Status, WordModel, WordsModel
 class ImportPage(QWidget):
     add_word_to_model = Signal(WordModel)
     save_words_to_model = Signal()
-    to_define_word = Signal(str)
+    to_define_word = Signal(str, Status)
     start_defining_words = Signal(int)
 
     def __init__(self):
@@ -77,7 +77,7 @@ class ImportPage(QWidget):
         self.wordsModel.word_added.connect(self.add_word)
         self.save_words_to_model.connect(self.wordsModel.save_words)
         self.start_define_btn.clicked.connect(self.start_define_words)
-        self.to_define_word.connect(self.wordsModel.add_word_to_be_defined)
+        self.to_define_word.connect(self.wordsModel.update_status)
 
         for word in self.wordsModel.undefined_words:
             self.add_word(word)
@@ -151,7 +151,7 @@ class ImportPage(QWidget):
         selected_words = self.list_widget.selectedItems()
 
         for word in selected_words:
-            self.to_define_word.emit(word.data(Qt.UserRole))
+            self.to_define_word.emit(word.data(Qt.UserRole), Status.TO_BE_DEFINED)
             self.list_widget.takeItem(self.list_widget.row(word))
         self.save_words_to_model.emit()
         self.start_defining_words.emit(1)

@@ -14,11 +14,13 @@ from models import Status, WordModel, WordsModel
 
 
 class DefinePage(QWidget):
+    start_audio_for_words = Signal(int)
     save_words_to_model = Signal()
     user_definition_selection = Signal(list)
     user_word_selection = Signal(int)
     add_word_to_define_queue = Signal(WordModel)
     update_word_model = Signal(str, WordModel)
+    change_status = Signal(str, Status)
 
     def __init__(self):
         super().__init__()
@@ -58,11 +60,12 @@ class DefinePage(QWidget):
 
         # DEFINED BOX
         self.defined_list_widget = QListWidget()
+        self.defined_list_widget.setSelectionMode(QListWidget.MultiSelection)
         self.definded_box.addWidget(self.defined_list_widget)
         self.h_defined_layout = QHBoxLayout()
 
-        get_audio_btn = QPushButton("Get Audio for Words")
-        self.h_defined_layout.addWidget(get_audio_btn)
+        self.get_audio_btn = QPushButton("Get Audio for Words")
+        self.h_defined_layout.addWidget(self.get_audio_btn)
 
         self.definded_box.addLayout(self.h_defined_layout)
 
@@ -76,7 +79,8 @@ class DefinePage(QWidget):
         self.move_word_to_queue_btn.clicked.connect(self.move_word_to_queue)
         self.save_words_to_model.connect(self.wordsModel.save_words)
         self.update_word_model.connect(self.wordsModel.update_word)
-
+        self.get_audio_btn.clicked.connect(self.start_audio_words)
+        self.change_status.connect(self.wordsModel.update_status)
         for word in self.wordsModel.to_be_defined_words:
             self.add_word(word)
 
@@ -110,8 +114,7 @@ class DefinePage(QWidget):
         ]
         if word:
             change_word = word[0]
-            change_word.status = Status.TO_BE_DEFINED
-            self.add_word(change_word)
+            self.change_status.emit(change_word.guid, Status.TO_BE_DEFINED)
             for index in range(self.skipped_list_widget.count()):
                 item = self.skipped_list_widget.item(index)
                 if item and item.data(Qt.UserRole) == change_word.guid:
@@ -210,3 +213,12 @@ class DefinePage(QWidget):
             item = self.list_widget.item(index)
             if item and item.data(Qt.UserRole) == word.guid:
                 self.list_widget.takeItem(self.list_widget.row(item))
+
+    def start_audio_words(self):
+        self.defined_list_widget.selectAll()
+        selected_words = self.defined_list_widget.selectedItems()
+        for word in selected_words:
+            self.change_status.emit(word.data(Qt.UserRole), Status.TO_BE_AUDIO)
+            self.defined_list_widget.takeItem(self.defined_list_widget.row(word))
+        self.save_words_to_model.emit()
+        self.start_audio_for_words.emit(2)

@@ -31,6 +31,7 @@ class WordsModel(QObject, metaclass=QSingleton):
     word_updated = Signal(WordModel)
     word_deleted = Signal(str)
     word_added_to_be_defined = Signal(WordModel)
+    word_added_to_be_audio = Signal(WordModel)
 
     def __init__(self):
         """
@@ -83,6 +84,16 @@ class WordsModel(QObject, metaclass=QSingleton):
             list: The list of current rule sets.
         """
         return [word for word in self._words if word.status == Status.SKIPPED_DEFINED]
+
+    @property
+    def to_be_audio_words(self) -> List:
+        """
+        Property to access the list of rule set.
+
+        Returns:
+            list: The list of current rule sets.
+        """
+        return [word for word in self._words if word.status == Status.TO_BE_AUDIO]
 
     @Slot(WordModel)
     def add_word(self, word: WordModel) -> None:
@@ -179,14 +190,19 @@ class WordsModel(QObject, metaclass=QSingleton):
             self._words.append(saved_word)
         self.settings.end_group()
 
-    @Slot(str)
-    def add_word_to_be_defined(self, guid):
+    @Slot(str, Status)
+    def update_status(self, guid, status):
         updated_status = []
         for word in self._words:
             if word.guid == guid:
                 updated_word = word
-                updated_word.status = Status.TO_BE_DEFINED
-                self.word_added_to_be_defined.emit(word)
+                match status:
+                    case Status.TO_BE_DEFINED:
+                        updated_word.status = Status.TO_BE_DEFINED
+                        self.word_added_to_be_defined.emit(word)
+                    case Status.TO_BE_AUDIO:
+                        updated_word.status = Status.TO_BE_AUDIO
+                        self.word_added_to_be_audio.emit(word)
                 updated_status.append(updated_word)
             else:
                 updated_status.append(word)
