@@ -8,10 +8,12 @@ class Status(Enum):
     DEFINDED = auto()
     TO_BE_AUDIO = auto()
     AUDIO = auto()
+    TO_BE_SYNCED = auto()
     ANKI_SYNCED = auto()
     SKIPPED_AUDIO = auto()
     SKIPPED_DEFINED = auto()
-    SKIPPED_ANKI_SYNCED = auto()
+    SKIPPED_ANKI_DUP = auto()
+    SKIPPED_ANKI_ERROR = auto()
 
 
 @dataclass
