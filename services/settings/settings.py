@@ -22,7 +22,7 @@ class AppSettings(Singleton):
         Initializes the AppSettings singleton with the QSettings instance for the application.
         """
         super().__init__()
-        self._settings = QSettings("IntraRulesBot", "IntraRulesBotApp")
+        self._settings = QSettings("EnglishDict", "EnglishDictApp")
 
     def set_value(self, key: str, value: Optional[Any]) -> None:
         """

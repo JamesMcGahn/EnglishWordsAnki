@@ -22,5 +22,7 @@
     <file>images/up_arrow_off_b.png</file>
     <file>images/define_on.png</file>
     <file>images/define_black.png</file>
+    <file>images/green_check.png</file>
+    <file>images/red_check.png</file>
   </qresource>
 </RCC>
