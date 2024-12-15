@@ -41,17 +41,17 @@ class AudioThread(QThread):
             self.worker.do_work()
 
         else:
-            self.finished.emit()
+            self.cleanup()
 
     @Slot(WordModel)
     def add_word_to_list(self, word):
-        with QMutexLocker(self.mutex):
+        with QMutexLocker(self._mutex):
             self.words.append(word)
 
     def success_download(self, path, word):
         path_dict = PathManager.regex_path(path)
         word.audio_path = path
-        word.audio = f"{path_dict["filename"]}{path_dict["ext"]}"
+        word.audio = f"[{path_dict["filename"]}{path_dict["ext"]}]"
         word.status = Status.AUDIO
         self.audio_word.emit(word)
         self.download_next_word()
@@ -73,3 +73,9 @@ class AudioThread(QThread):
         with QMutexLocker(self._mutex):  # Automatic lock and unlock
             self._paused = False
             self._wait_condition.wakeAll()
+
+    def cleanup(self):
+        if not self.words:
+            self.finished.emit()
+        else:
+            self.download_next_word()

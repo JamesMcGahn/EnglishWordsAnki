@@ -140,11 +140,11 @@ class WordLookupWorker(QThread):
 
             except Exception as e:
                 print(e)
-        # self.defined_words.emit(self.words)
+        self.finished.emit()
 
     @Slot(WordModel)
     def add_word_to_list(self, word):
-        with QMutexLocker(self.mutex):
+        with QMutexLocker(self._mutex):
             self.word_list.append(word)
 
     def pause_if_needed(self, checkVar):
