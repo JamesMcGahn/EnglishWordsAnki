@@ -37,8 +37,8 @@ class DefinePage(QWidget):
         define_queue_qv.addWidget(self.list_widget)
         define_queue_qv.addLayout(queue_buttons_layout)
 
-        self.start_define = QPushButton("Start Defining")
-        queue_buttons_layout.addWidget(self.start_define)
+        self.start_define_btn = QPushButton("Start Defining")
+        queue_buttons_layout.addWidget(self.start_define_btn)
 
         self.bottom_list_widgets = QHBoxLayout()
 
@@ -73,7 +73,7 @@ class DefinePage(QWidget):
 
         self.wordsModel = WordsModel()
         # SLOTS / SIGNALS
-        self.start_define.clicked.connect(self.start_define_words)
+        self.start_define_btn.clicked.connect(self.start_define_words)
         self.wordsModel.word_added_to_be_defined.connect(self.add_word)
         self.edit_word_btn.clicked.connect(self.edit_skipped_word)
         self.move_word_to_queue_btn.clicked.connect(self.move_word_to_queue)
@@ -150,28 +150,43 @@ class DefinePage(QWidget):
         self.list_widget.addItem(list_item)
 
         if self.word_lookup_thread and self.word_lookup_thread.isRunning():
-            self.add_word_to_define_queue.emit(self.word_lookup_thread.add_word_to_list)
+
+            self.add_word_to_define_queue.emit(word)
 
     @Slot(int)
     def start_define_words(self):
         if self.word_lookup_thread and self.word_lookup_thread.isRunning():
             return
-        else:
-            self.start_define.setDisabled(True)
-            self.word_lookup = WordLookupWorker(self.wordsModel.to_be_defined_words)
-            self.word_lookup.multi_definitions.connect(self.select_definitions)
-            self.word_lookup.multi_words.connect(self.select_word)
-            self.user_definition_selection.connect(
-                self.word_lookup.get_user_definition_selection
-            )
-            self.user_word_selection.connect(self.word_lookup.get_user_word_selection)
-            self.word_lookup.defined_word.connect(self.receive_defined_word)
-            self.word_lookup.skipped_word.connect(self.receive_skipped_word)
-            self.word_lookup.finished.connect(
-                lambda: self.start_define.setDisabled(False)
-            )
-            self.word_lookup.finished.connect(lambda: self.save_words_to_model.emit())
-            self.word_lookup.start()
+
+        self.start_define_btn.setDisabled(True)
+        self.word_lookup_thread = WordLookupWorker(self.wordsModel.to_be_defined_words)
+
+        self.word_lookup_thread.multi_definitions.connect(self.select_definitions)
+        self.word_lookup_thread.multi_words.connect(self.select_word)
+        self.user_definition_selection.connect(
+            self.word_lookup_thread.get_user_definition_selection
+        )
+        self.user_word_selection.connect(
+            self.word_lookup_thread.get_user_word_selection
+        )
+        self.word_lookup_thread.defined_word.connect(self.receive_defined_word)
+        self.word_lookup_thread.skipped_word.connect(self.receive_skipped_word)
+        self.word_lookup_thread.finished.connect(
+            lambda: self.start_define_btn.setDisabled(False)
+        )
+        self.word_lookup_thread.finished.connect(self.reset_thread_reference)
+        self.word_lookup_thread.finished.connect(
+            lambda: self.save_words_to_model.emit()
+        )
+        self.add_word_to_define_queue.connect(self.word_lookup_thread.add_word_to_list)
+        self.word_lookup_thread.start()
+
+    def reset_thread_reference(self):
+        if self.word_lookup_thread and self.word_lookup_thread.isRunning():
+            self.word_lookup_thread.quit()
+            self.word_lookup_thread.wait()
+            self.word_lookup_thread.deleteLater()
+            self.word_lookup_thread = None
 
     def select_word(self, words):
         choices = [
