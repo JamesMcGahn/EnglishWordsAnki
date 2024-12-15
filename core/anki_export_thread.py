@@ -1,10 +1,10 @@
-import subprocess
 from collections import deque
 
 import requests
 from PySide6.QtCore import QMutex, QMutexLocker, QThread, QWaitCondition, Signal, Slot
 
 from models import Status, WordModel
+from services.subprocess import SubprocessTasks
 
 
 class AnkiExportThread(QThread):
@@ -12,6 +12,7 @@ class AnkiExportThread(QThread):
     error_word = Signal(WordModel)
     dup_word = Signal(WordModel)
     finished = Signal()
+    start_check = Signal()
 
     def __init__(self, words, deck_name, model_name):
         super().__init__()
@@ -26,12 +27,20 @@ class AnkiExportThread(QThread):
 
     def run(self):
         print("started")
-        self.open_notes_app()
-        self.sync_next_word()
 
-    def open_notes_app(self):
-        """Launches the Anki application."""
-        subprocess.run(["open", "-a", "Anki"])
+        self.subprocess_tasks = SubprocessTasks("Anki")
+        self.subprocess_tasks.moveToThread(self)
+        self.subprocess_tasks.app_checked_opened.connect(self.receive_check)
+        self.start_check.connect(self.subprocess_tasks.check_and_open)
+        self.start_check.emit()
+
+    def receive_check(self, status, msg):
+        if status:
+            print(msg)
+            self.sync_next_word()
+        else:
+            print(msg)
+            self.finished.emit()
 
     def sync_next_word(self):
         if len(self.words) > 0:
