@@ -32,6 +32,8 @@ class WordsModel(QObject, metaclass=QSingleton):
     word_deleted = Signal(str)
     word_added_to_be_defined = Signal(WordModel)
     word_added_to_be_audio = Signal(WordModel)
+    word_added_to_be_sync = Signal(WordModel)
+    word_added_synced = Signal(WordModel)
 
     def __init__(self):
         """
@@ -86,6 +88,38 @@ class WordsModel(QObject, metaclass=QSingleton):
         return [word for word in self._words if word.status == Status.SKIPPED_DEFINED]
 
     @property
+    def skipped_audio_words(self) -> List:
+        """
+        Property to access the list of rule set.
+
+        Returns:
+            list: The list of current rule sets.
+        """
+        return [word for word in self._words if word.status == Status.SKIPPED_AUDIO]
+
+    @property
+    def skipped_sync_error(self) -> List:
+        """
+        Property to access the list of rule set.
+
+        Returns:
+            list: The list of current rule sets.
+        """
+        return [
+            word for word in self._words if word.status == Status.SKIPPED_ANKI_ERROR
+        ]
+
+    @property
+    def skipped_sync_duplicates(self) -> List:
+        """
+        Property to access the list of rule set.
+
+        Returns:
+            list: The list of current rule sets.
+        """
+        return [word for word in self._words if word.status == Status.SKIPPED_ANKI_DUP]
+
+    @property
     def to_be_audio_words(self) -> List:
         """
         Property to access the list of rule set.
@@ -94,6 +128,16 @@ class WordsModel(QObject, metaclass=QSingleton):
             list: The list of current rule sets.
         """
         return [word for word in self._words if word.status == Status.TO_BE_AUDIO]
+
+    @property
+    def to_be_synced_words(self) -> List:
+        """
+        Property to access the list of rule set.
+
+        Returns:
+            list: The list of current rule sets.
+        """
+        return [word for word in self._words if word.status == Status.TO_BE_SYNCED]
 
     @Slot(WordModel)
     def add_word(self, word: WordModel) -> None:
@@ -124,6 +168,11 @@ class WordsModel(QObject, metaclass=QSingleton):
             words = [word for word in self.words if word.guid != guid]
             self._words = words
             self.word_deleted.emit(guid)
+
+    @Slot()
+    def delete_duplicates(self):
+        words = [word for word in self.words if word.status != Status.SKIPPED_ANKI_DUP]
+        self._words = words
 
     @Slot(str, WordModel)
     def update_word(self, guid: str, word: WordModel) -> None:
@@ -203,6 +252,12 @@ class WordsModel(QObject, metaclass=QSingleton):
                     case Status.TO_BE_AUDIO:
                         updated_word.status = Status.TO_BE_AUDIO
                         self.word_added_to_be_audio.emit(word)
+                    case Status.TO_BE_SYNCED:
+                        updated_word.status = Status.TO_BE_SYNCED
+                        self.word_added_to_be_sync.emit(word)
+                    case Status.ANKI_SYNCED:
+                        updated_word.status = Status.ANKI_SYNCED
+                        self.word_added_synced.emit(word)
                 updated_status.append(updated_word)
             else:
                 updated_status.append(word)
