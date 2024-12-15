@@ -79,8 +79,28 @@ class SettingsPage(QWidget):
         self.anki_model_deck_hlayout.addWidget(self.label_anki_model_deck_verfied)
         self.anki_model_deck_hlayout.addWidget(self.label_anki_model_verify_btn)
 
+        self.label_anki_user = QLabel("Anki User Name:")
+        self.label_anki_user.setMinimumWidth(143)
+        self.lineEdit_anki_user = QLineEdit()
+        self.lineEdit_anki_user.setMaximumWidth(230)
+        self.label_anki_user_verfied = QPushButton()
+        self.label_anki_user_verfied.setMaximumWidth(40)
+        self.label_anki_user_verfied.setObjectName("anki_verify_icon_w")
+        self.label_anki_user_verfied.setStyleSheet(
+            """QPushButton#anki_verify_icon_w{background:transparent;border: none;}"""
+        )
+        self.label_anki_user_verify_btn = QPushButton("Verify User")
+        self.anki_user_hlayout = QHBoxLayout()
+        self.anki_user_hlayout.setSpacing(10)
+        # self.anki_user_hlayout.addItem(hspacer)
+        self.anki_user_hlayout.addWidget(self.label_anki_user)
+        self.anki_user_hlayout.addWidget(self.lineEdit_anki_user)
+        self.anki_user_hlayout.addWidget(self.label_anki_user_verfied)
+        self.anki_user_hlayout.addWidget(self.label_anki_user_verify_btn)
+
         self.settings_page_layout.addLayout(self.anki_words_deck_hlayout)
         self.settings_page_layout.addLayout(self.anki_model_deck_hlayout)
+        self.settings_page_layout.addLayout(self.anki_user_hlayout)
         self.settings_page_layout.addItem(vspacer)
 
         self.settings = AppSettings()
@@ -88,6 +108,7 @@ class SettingsPage(QWidget):
 
         self.label_anki_words_verify_btn.clicked.connect(self.verify_deck_name)
         self.label_anki_model_verify_btn.clicked.connect(self.verify_deck_model)
+        self.label_anki_user_verify_btn.clicked.connect(self.verify_anki_user)
         self.lineEdit_anki_words_deck.textChanged.connect(
             lambda word, field="words": self.change_setting(
                 field,
@@ -101,22 +122,32 @@ class SettingsPage(QWidget):
             )
         )
 
+        home_directory = os.path.expanduser("~")
+        print("home", home_directory)
+
     def get_settings(self):
         self.settings.begin_group("settings")
         self.words_deck = self.settings.get_value("words", "")
         self.model_deck = self.settings.get_value("model", "")
+        self.anki_user = self.settings.get_value("user", "User 1")
         self.words_verified = self.settings.get_value("words-verified", False)
         self.model_verified = self.settings.get_value("model-verified", False)
+        self.anki_user_verified = self.settings.get_value("user-verified", False)
         self.lineEdit_anki_words_deck.setText(self.words_deck)
         self.lineEdit_anki_model_deck.setText(self.model_deck)
+        self.lineEdit_anki_user.setText(self.anki_user)
         self.label_anki_words_deck_verfied.setIcon(
             self.check_icon if self.words_verified else self.x_icon
         )
         self.label_anki_model_deck_verfied.setIcon(
             self.check_icon if self.model_verified else self.x_icon
         )
+        self.label_anki_user_verfied.setIcon(
+            self.check_icon if self.anki_user_verified else self.x_icon
+        )
         self.label_anki_words_verify_btn.setDisabled(self.words_verified)
         self.label_anki_model_verify_btn.setDisabled(self.model_verified)
+        self.label_anki_user_verify_btn.setDisabled(self.anki_user_verified)
         self.settings.end_group()
 
     def verify_deck_name(self):
@@ -153,6 +184,23 @@ class SettingsPage(QWidget):
             lambda: self.label_anki_model_verify_btn.setDisabled(False)
         )
 
+    def verify_anki_user(self):
+        json = {"action": "getProfiles", "version": 6}
+        self.net_check_user = QThread(self)
+
+        self.check_user = NetworkWorker("http://127.0.0.1:8765/", json=json)
+
+        self.check_user.moveToThread(self.net_check_user)
+        self.check_user.response.connect(self.user_response)
+        self.net_check_user.started.connect(self.check_user.do_work)
+        self.net_check_user.start()
+        self.label_anki_user_verify_btn.setDisabled(True)
+        self.check_user.finished.connect(self.check_user.deleteLater)
+        self.net_check_user.finished.connect(self.net_check_user.deleteLater)
+        self.check_user.error.connect(
+            lambda: self.label_anki_user_verify_btn.setDisabled(False)
+        )
+
     def change_setting(self, field, value, verified=False):
         print(field, value)
         self.settings.begin_group("settings")
@@ -186,5 +234,19 @@ class SettingsPage(QWidget):
         else:
             self.label_anki_model_verify_btn.setDisabled(False)
         self.label_anki_model_deck_verfied.setIcon(
+            self.check_icon if self.model_verified else self.x_icon
+        )
+
+    def user_response(self, response):
+        res = response["result"]
+        print(res)
+        if self.anki_user in res:
+            self.change_setting("user", self.anki_user, True)
+            self.label_anki_user_verfied.setIcon(self.check_icon)
+            self.label_anki_model_verify_btn.setDisabled(True)
+            self.model_verified = True
+        else:
+            self.label_anki_model_verify_btn.setDisabled(False)
+        self.label_anki_user_verfied.setIcon(
             self.check_icon if self.model_verified else self.x_icon
         )
