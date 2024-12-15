@@ -1,7 +1,7 @@
 from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QSizePolicy, QStackedWidget, QVBoxLayout, QWidget
 
-from views.pages import AudioPage, DefinePage, ImportPage
+from views.pages import AudioPage, DefinePage, ImportPage, SyncPage
 
 
 class MainScreenView(QWidget):
@@ -46,14 +46,14 @@ class MainScreenView(QWidget):
         self.import_page = ImportPage()
         self.define_page = DefinePage()
         self.audio_page = AudioPage()
-        self.export_page = QWidget()
+        self.sync_page = SyncPage()
         self.settings_page = QWidget()
         self.logs_page = QWidget()
         # Add pages to stacked widget
         self.stackedWidget.addWidget(self.import_page)
         self.stackedWidget.addWidget(self.define_page)
         self.stackedWidget.addWidget(self.audio_page)
-        self.stackedWidget.addWidget(self.export_page)
+        self.stackedWidget.addWidget(self.sync_page)
         self.stackedWidget.addWidget(self.settings_page)
         # Add the stacked widget to the main layout
         self.main_screen_container_v.addWidget(self.stackedWidget)
