@@ -1,4 +1,4 @@
-from PySide6.QtCore import Qt, Signal, Slot
+from PySide6.QtCore import Qt, QThread, Signal, Slot
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QListWidget,
@@ -8,7 +8,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from core import AnkiExportThread
+from core import AnkiExportThread, RemoveDuplicateAudio
 from models import Status, WordModel, WordsModel
 
 
@@ -18,6 +18,7 @@ class SyncPage(QWidget):
     update_word_model = Signal(str, WordModel)
     change_status = Signal(str, Status)
     start_sync_for_words = Signal(int)
+    delete_words = Signal(list)
 
     def __init__(self):
         super().__init__()
@@ -74,17 +75,39 @@ class SyncPage(QWidget):
         self.save_words_to_model.connect(self.wordsModel.save_words)
         self.update_word_model.connect(self.wordsModel.update_word)
         self.change_status.connect(self.wordsModel.update_status)
+        self.delete_words.connect(self.wordsModel.delete_words)
 
         for word in self.wordsModel.to_be_synced_words:
             self.add_word(word)
 
     def remove_duplicates(self):
-        guids = [word.guid for word in self.wordsModel.skipped_sync_duplicates]
+        guids = []
+        paths = []
+        for word in self.wordsModel.skipped_sync_duplicates:
+            print(word.word)
+            guids.append(word.guid)
+            paths.append(word.audio_path)
 
-        for index in range(self.errored_list_widget.count()):
+        self.remove_duplicates_btn.setDisabled(True)
+        self.removal_thread = QThread(self)
+        self.removal_worker = RemoveDuplicateAudio(paths)
+        self.removal_worker.moveToThread(self.removal_thread)
+        self.removal_thread.started.connect(self.removal_worker.do_work)
+        self.removal_worker.finished.connect(
+            lambda: self.on_file_removal_completed(guids)
+        )
+        self.removal_thread.finished.connect(self.removal_worker.deleteLater)
+        self.removal_thread.finished.connect(self.removal_thread.deleteLater)
+        self.removal_thread.start()
+
+    def on_file_removal_completed(self, guids):
+
+        self.delete_words.emit(guids)
+        for index in reversed(range(self.errored_list_widget.count())):
             item = self.errored_list_widget.item(index)
             if item and item.data(Qt.UserRole) in guids:
                 self.errored_list_widget.takeItem(self.errored_list_widget.row(item))
+        self.remove_duplicates_btn.setDisabled(False)
 
     def move_word_to_queue(self):
         word = self.remove_from_error_list()
@@ -101,7 +124,7 @@ class SyncPage(QWidget):
             if word:
                 change_word = word[0]
 
-                for index in range(self.errored_list_widget.count()):
+                for index in reversed(range(self.errored_list_widget.count())):
                     item = self.errored_list_widget.item(index)
                     if item and item.data(Qt.UserRole) == change_word.guid:
                         self.errored_list_widget.takeItem(
@@ -149,14 +172,15 @@ class SyncPage(QWidget):
             self.anki_thread.dup_word.connect(
                 lambda word: self.receive_error_word(word, True)
             )
-            self.anki_thread.finished.connect(
-                lambda: self.start_sync_btn.setDisabled(False)
-            )
-            self.anki_thread.finished.connect(self.reset_thread_reference)
-            self.anki_thread.finished.connect(lambda: self.save_words_to_model.emit())
+            self.anki_thread.finished.connect(self.on_anki_thread_completed)
             self.anki_thread.synced_word.connect(self.receive_synced_word)
             self.add_word_to_sync_queue.connect(self.anki_thread.add_word_to_list)
             self.anki_thread.start()
+
+    def on_anki_thread_completed(self):
+        self.save_words_to_model.emit()
+        self.reset_thread_reference()
+        self.start_sync_btn.setDisabled(False)
 
     def reset_thread_reference(self):
         if self.anki_thread and self.anki_thread.isRunning():
@@ -171,7 +195,7 @@ class SyncPage(QWidget):
         self.defined_list_widget.addItem(list_item)
         self.update_word_model.emit(word.guid, word)
         self.change_status.emit(word.guid, Status.ANKI_SYNCED)
-        for index in range(self.list_widget.count()):
+        for index in reversed(range(self.list_widget.count())):
             item = self.list_widget.item(index)
             if item and item.data(Qt.UserRole) == word.guid:
                 self.list_widget.takeItem(self.list_widget.row(item))
@@ -181,7 +205,7 @@ class SyncPage(QWidget):
         list_item.setData(Qt.UserRole, word.guid)
         self.errored_list_widget.addItem(list_item)
 
-        for index in range(self.list_widget.count()):
+        for index in reversed(range(self.list_widget.count())):
             item = self.list_widget.item(index)
             if item and item.data(Qt.UserRole) == word.guid:
                 self.list_widget.takeItem(self.list_widget.row(item))
