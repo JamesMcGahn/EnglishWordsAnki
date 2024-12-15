@@ -15,10 +15,10 @@ from models import Status, WordModel, WordsModel
 
 class AudioPage(QWidget):
     save_words_to_model = Signal()
-    user_definition_selection = Signal(list)
-    user_word_selection = Signal(int)
     add_word_to_audio_queue = Signal(WordModel)
     update_word_model = Signal(str, WordModel)
+    change_status = Signal(str, Status)
+    start_sync_for_words = Signal(int)
 
     def __init__(self):
         super().__init__()
@@ -35,36 +35,37 @@ class AudioPage(QWidget):
         define_queue_qv.addWidget(self.list_widget)
         define_queue_qv.addLayout(queue_buttons_layout)
 
-        self.start_define = QPushButton("Start Defining")
+        self.start_define = QPushButton("Start Audio")
         queue_buttons_layout.addWidget(self.start_define)
 
         self.bottom_list_widgets = QHBoxLayout()
 
         self.skipped_box = QVBoxLayout()
-        self.definded_box = QVBoxLayout()
+        self.audio_downloaded_box = QVBoxLayout()
 
         self.bottom_list_widgets.addLayout(self.skipped_box)
-        self.bottom_list_widgets.addLayout(self.definded_box)
+        self.bottom_list_widgets.addLayout(self.audio_downloaded_box)
 
         # SKIPPED BOX
         self.errored_list_widget = QListWidget()
         self.skipped_box.addWidget(self.errored_list_widget)
-        self.edit_word_btn = QPushButton("Edit Word")
-        self.move_word_to_queue_btn = QPushButton("Move Word to Queue")
+        self.skip_audio_word_btn = QPushButton("Skip Audio")
+        self.move_word_to_queue_btn = QPushButton("Move Word to Audio Queue")
         self.h_skipped_layout = QHBoxLayout()
-        self.h_skipped_layout.addWidget(self.edit_word_btn)
         self.h_skipped_layout.addWidget(self.move_word_to_queue_btn)
+        self.h_skipped_layout.addWidget(self.skip_audio_word_btn)
+
         self.skipped_box.addLayout(self.h_skipped_layout)
 
         # DEFINED BOX
-        self.defined_list_widget = QListWidget()
-        self.definded_box.addWidget(self.defined_list_widget)
+        self.audio_downloaded_list_widget = QListWidget()
+        self.audio_downloaded_box.addWidget(self.audio_downloaded_list_widget)
         self.h_defined_layout = QHBoxLayout()
+        self.audio_downloaded_list_widget.setSelectionMode(QListWidget.MultiSelection)
+        self.get_sync_btn = QPushButton("Sync Words to Anki")
+        self.h_defined_layout.addWidget(self.get_sync_btn)
 
-        get_audio_btn = QPushButton("Get Audio for Words")
-        self.h_defined_layout.addWidget(get_audio_btn)
-
-        self.definded_box.addLayout(self.h_defined_layout)
+        self.audio_downloaded_box.addLayout(self.h_defined_layout)
 
         word_set_layout.addLayout(self.bottom_list_widgets)
 
@@ -72,52 +73,50 @@ class AudioPage(QWidget):
         # SLOTS / SIGNALS
         self.start_define.clicked.connect(self.start_audio_words)
         self.wordsModel.word_added_to_be_audio.connect(self.add_word)
-        self.edit_word_btn.clicked.connect(self.edit_skipped_word)
+        self.skip_audio_word_btn.clicked.connect(self.move_error_word_to_sync)
         self.move_word_to_queue_btn.clicked.connect(self.move_word_to_queue)
         self.save_words_to_model.connect(self.wordsModel.save_words)
         self.update_word_model.connect(self.wordsModel.update_word)
+        self.change_status.connect(self.wordsModel.update_status)
+        self.get_sync_btn.clicked.connect(self.start_sync_words)
 
         for word in self.wordsModel.to_be_audio_words:
             self.add_word(word)
 
-    # def edit_skipped_word(self):
-    #     item = self.errored_list_widget.currentItem()
-    #     guid = item.data(Qt.UserRole)
-    #     word = [
-    #         word for word in self.wordsModel.skipped_defined_words if word.guid == guid
-    #     ]
-    #     if word:
-    #         edit_word = word[0]
-    #         self.edit_word_dialog = EditWordDialog(edit_word, "Edit Word", "Edit Word")
-    #         self.edit_word_dialog.updated_word.connect(self.update_edited_word)
-    #         self.edit_word_dialog.exec()
+    def move_error_word_to_sync(self):
+        word = self.remove_from_error_list()
+        if word:
+            list_item = QListWidgetItem(word.word)
+            list_item.setData(Qt.UserRole, word.guid)
+            self.audio_downloaded_list_widget.addItem(list_item)
+            word.status = Status.AUDIO
+            self.update_word_model.emit(word.guid, word)
 
-    # def update_edited_word(self, word):
-    #     print(word)
-    #     word.status = Status.TO_BE_DEFINED
-    #     self.add_word(word)
-    #     self.update_word_model.emit(word.guid, word)
-    #     for index in range(self.errored_list_widget.count()):
-    #         item = self.errored_list_widget.item(index)
-    #         if item and item.data(Qt.UserRole) == word.guid:
-    #             self.errored_list_widget.takeItem(self.errored_list_widget.row(item))
+    def move_word_to_queue(self):
+        word = self.remove_from_error_list()
+        if word:
+            self.change_status.emit(word.guid, Status.TO_BE_AUDIO)
 
-    # def move_word_to_queue(self):
-    #     item = self.errored_list_widget.currentItem()
-    #     guid = item.data(Qt.UserRole)
-    #     word = [
-    #         word for word in self.wordsModel.skipped_defined_words if word.guid == guid
-    #     ]
-    #     if word:
-    #         change_word = word[0]
-    #         change_word.status = Status.TO_BE_DEFINED
-    #         self.add_word(change_word)
-    #         for index in range(self.errored_list_widget.count()):
-    #             item = self.errored_list_widget.item(index)
-    #             if item and item.data(Qt.UserRole) == change_word.guid:
-    #                 self.errored_list_widget.takeItem(
-    #                     self.errored_list_widget.row(item)
-    #                 )
+    def remove_from_error_list(self):
+        item = self.errored_list_widget.currentItem()
+        if item:
+            guid = item.data(Qt.UserRole)
+            word = [
+                word
+                for word in self.wordsModel.skipped_audio_words
+                if word.guid == guid
+            ]
+            if word:
+                change_word = word[0]
+
+                for index in range(self.errored_list_widget.count()):
+                    item = self.errored_list_widget.item(index)
+                    if item and item.data(Qt.UserRole) == change_word.guid:
+                        self.errored_list_widget.takeItem(
+                            self.errored_list_widget.row(item)
+                        )
+                return change_word
+        return False
 
     @Slot(WordModel)
     def add_word(self, word: WordModel) -> None:
@@ -139,7 +138,7 @@ class AudioPage(QWidget):
         self.list_widget.addItem(list_item)
 
         if self.audio_thread and self.audio_thread.isRunning():
-            self.add_word_to_audio_queue.emit(self.audio_thread.add_word_to_list)
+            self.add_word_to_audio_queue.emit(word)
 
     @Slot(int)
     def start_audio_words(self):
@@ -156,12 +155,21 @@ class AudioPage(QWidget):
                 lambda: self.start_define.setDisabled(False)
             )
             self.audio_thread.finished.connect(lambda: self.save_words_to_model.emit())
+            self.audio_thread.finished.connect(self.reset_thread_reference)
+            self.add_word_to_audio_queue.connect(self.audio_thread.add_word_to_list)
             self.audio_thread.start()
+
+    def reset_thread_reference(self):
+        if self.audio_thread and self.audio_thread.isRunning():
+            self.audio_thread.quit()
+            self.audio_thread.wait()
+            self.audio_thread.deleteLater()
+            self.audio_thread = None
 
     def receive_audio_word(self, word):
         list_item = QListWidgetItem(word.word)
         list_item.setData(Qt.UserRole, word.guid)
-        self.defined_list_widget.addItem(list_item)
+        self.audio_downloaded_list_widget.addItem(list_item)
         self.update_word_model.emit(word.guid, word)
         for index in range(self.list_widget.count()):
             item = self.list_widget.item(index)
@@ -177,3 +185,15 @@ class AudioPage(QWidget):
             item = self.list_widget.item(index)
             if item and item.data(Qt.UserRole) == word.guid:
                 self.list_widget.takeItem(self.list_widget.row(item))
+
+    def start_sync_words(self):
+        self.audio_downloaded_list_widget.selectAll()
+        selected_words = self.audio_downloaded_list_widget.selectedItems()
+        print(selected_words)
+        for word in selected_words:
+            self.change_status.emit(word.data(Qt.UserRole), Status.TO_BE_SYNCED)
+            self.audio_downloaded_list_widget.takeItem(
+                self.audio_downloaded_list_widget.row(word)
+            )
+        self.save_words_to_model.emit()
+        self.start_sync_for_words.emit(3)
