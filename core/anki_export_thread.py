@@ -43,7 +43,7 @@ class AnkiExportThread(QThread):
             self.finished.emit()
 
     def sync_next_word(self):
-        if len(self.words) > 0:
+        while self.words:
             word = self.words.popleft()
             try:
                 payload = {
@@ -74,7 +74,7 @@ class AnkiExportThread(QThread):
                 }
 
                 response = requests.post(
-                    "http://127.0.0.1:8765/", json=payload, timeout=20
+                    "http://127.0.0.1:8765/", json=payload, timeout=5
                 )
 
                 response = response.json()
@@ -99,14 +99,12 @@ class AnkiExportThread(QThread):
                 word.status = Status.SKIPPED_ANKI_ERROR
                 self.error_word.emit(word)
                 print(e)
-            finally:
-                self.sync_next_word()
-        else:
-            self.cleanup()
+
+        self.cleanup()
 
     @Slot(WordModel)
     def add_word_to_list(self, word):
-        with QMutexLocker(self.mutex):
+        with QMutexLocker(self._mutex):
             self.words.append(word)
 
     def pause_if_needed(self, checkVar):
@@ -123,7 +121,4 @@ class AnkiExportThread(QThread):
             self._wait_condition.wakeAll()
 
     def cleanup(self):
-        if not self.words:
-            self.finished.emit()
-        else:
-            self.sync_next_word()
+        self.finished.emit()
