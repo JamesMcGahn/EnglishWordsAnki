@@ -169,6 +169,27 @@ class WordsModel(QObject, metaclass=QSingleton):
             self._words = words
             self.word_deleted.emit(guid)
 
+    @Slot(list)
+    def delete_words(self, guids: list) -> None:
+        """
+        Delete the word from the words model. Emits word_deleted signal
+
+        Args:
+            guid (list): The guid of the word
+
+        Returns:
+            None: This function does not return a value.
+        """
+        words = []
+        if guids:
+            for word in self.words:
+                if word.guid in guids:
+                    continue
+                else:
+                    words.append(word)
+
+            self._words = words
+
     @Slot()
     def delete_duplicates(self):
         words = [word for word in self.words if word.status != Status.SKIPPED_ANKI_DUP]
