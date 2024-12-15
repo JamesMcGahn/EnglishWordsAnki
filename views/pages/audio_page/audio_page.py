@@ -109,7 +109,7 @@ class AudioPage(QWidget):
             if word:
                 change_word = word[0]
 
-                for index in range(self.errored_list_widget.count()):
+                for index in reversed(range(self.errored_list_widget.count())):
                     item = self.errored_list_widget.item(index)
                     if item and item.data(Qt.UserRole) == change_word.guid:
                         self.errored_list_widget.takeItem(
@@ -171,7 +171,7 @@ class AudioPage(QWidget):
         list_item.setData(Qt.UserRole, word.guid)
         self.audio_downloaded_list_widget.addItem(list_item)
         self.update_word_model.emit(word.guid, word)
-        for index in range(self.list_widget.count()):
+        for index in reversed(range(self.list_widget.count())):
             item = self.list_widget.item(index)
             if item and item.data(Qt.UserRole) == word.guid:
                 self.list_widget.takeItem(self.list_widget.row(item))
@@ -181,7 +181,7 @@ class AudioPage(QWidget):
         list_item.setData(Qt.UserRole, word.guid)
         self.errored_list_widget.addItem(list_item)
 
-        for index in range(self.list_widget.count()):
+        for index in reversed(range(self.list_widget.count())):
             item = self.list_widget.item(index)
             if item and item.data(Qt.UserRole) == word.guid:
                 self.list_widget.takeItem(self.list_widget.row(item))

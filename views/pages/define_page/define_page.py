@@ -106,7 +106,7 @@ class DefinePage(QWidget):
         word.status = Status.TO_BE_DEFINED
         self.add_word(word)
         self.update_word_model.emit(word.guid, word)
-        for index in range(self.skipped_list_widget.count()):
+        for index in reversed(range(self.skipped_list_widget.count())):
             item = self.skipped_list_widget.item(index)
             if item and item.data(Qt.UserRole) == word.guid:
                 self.skipped_list_widget.takeItem(self.skipped_list_widget.row(item))
@@ -123,7 +123,7 @@ class DefinePage(QWidget):
             if word:
                 change_word = word[0]
                 self.change_status.emit(change_word.guid, Status.TO_BE_DEFINED)
-                for index in range(self.skipped_list_widget.count()):
+                for index in reversed(range(self.skipped_list_widget.count())):
                     item = self.skipped_list_widget.item(index)
                     if item and item.data(Qt.UserRole) == change_word.guid:
                         self.skipped_list_widget.takeItem(
@@ -222,7 +222,7 @@ class DefinePage(QWidget):
         list_item.setData(Qt.UserRole, word.guid)
         self.defined_list_widget.addItem(list_item)
         self.update_word_model.emit(word.guid, word)
-        for index in range(self.list_widget.count()):
+        for index in reversed(range(self.list_widget.count())):
             item = self.list_widget.item(index)
             if item and item.data(Qt.UserRole) == word.guid:
                 self.list_widget.takeItem(self.list_widget.row(item))
@@ -232,7 +232,7 @@ class DefinePage(QWidget):
         list_item.setData(Qt.UserRole, word.guid)
         self.skipped_list_widget.addItem(list_item)
 
-        for index in range(self.list_widget.count()):
+        for index in reversed(range(self.list_widget.count())):
             item = self.list_widget.item(index)
             if item and item.data(Qt.UserRole) == word.guid:
                 self.list_widget.takeItem(self.list_widget.row(item))
