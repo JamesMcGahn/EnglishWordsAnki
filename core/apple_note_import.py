@@ -24,6 +24,8 @@ class AppleNoteImport(QObject):
 
             self.content = self.clean_html(self.content)
             self.content = self.content.split(",")
+            # TODO: uncomment when ready to delete note after import
+            # self.clear_note_content(self.noteName)
             self.result.emit(self.content)
         else:
             self.result.emit([])
@@ -38,7 +40,7 @@ class AppleNoteImport(QObject):
         applescript = f"""
         tell application "Notes"
             activate
-            set theNote to the first note whose name contains "{note_title}"
+            set theNote to the first note whose name equals "{note_title}"
             set theText to body of theNote
         end tell
         return theText
@@ -61,8 +63,8 @@ class AppleNoteImport(QObject):
         applescript = f"""
         tell application "Notes"
             activate
-            set theNote to the first note whose name contains "{note_title}"
-            set body of theNote to ""
+            set theNote to the first note whose name equals "{note_title}"
+            set body of theNote to "<h1>{note_title}</h1>"
         end tell
         """
         subprocess.run(["osascript", "-e", applescript])
