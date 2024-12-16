@@ -62,18 +62,30 @@ class SettingsPage(QWidget):
             self.label_anki_user_verify_btn,
             self.anki_user_hlayout,
         ) = self.create_input_fields("Anki User Name:", "Verify User")
+        (
+            self.lineEdit_anki_audio_path,
+            self.label_anki_audio_path_verfied,
+            self.label_anki_audio_path_verify_btn,
+            self.anki_audio_path_hlayout,
+        ) = self.create_input_fields("Anki Audio path:", "Verify Audio Path")
 
         self.settings_page_layout.addLayout(self.anki_words_deck_hlayout)
         self.settings_page_layout.addLayout(self.anki_model_deck_hlayout)
         self.settings_page_layout.addLayout(self.anki_user_hlayout)
+        self.settings_page_layout.addLayout(self.anki_audio_path_hlayout)
         self.settings_page_layout.addItem(vspacer)
 
         self.settings = AppSettings()
+        self.home_directory = os.path.expanduser("~")
+        print("home", self.home_directory)
         self.get_settings()
 
         self.label_anki_words_verify_btn.clicked.connect(self.verify_deck_name)
         self.label_anki_model_verify_btn.clicked.connect(self.verify_deck_model)
         self.label_anki_user_verify_btn.clicked.connect(self.verify_anki_user)
+        self.label_anki_audio_path_verify_btn.clicked.connect(
+            self.verify_anki_user_audio_path
+        )
         self.lineEdit_anki_words_deck.textChanged.connect(
             lambda word, field="words": self.change_setting(
                 field,
@@ -92,9 +104,12 @@ class SettingsPage(QWidget):
                 word,
             )
         )
-
-        home_directory = os.path.expanduser("~")
-        print("home", home_directory)
+        self.lineEdit_anki_audio_path.textChanged.connect(
+            lambda word, field="audio": self.change_setting(
+                field,
+                word,
+            )
+        )
 
     def get_settings(self):
         self.settings.begin_group("settings")
@@ -118,6 +133,13 @@ class SettingsPage(QWidget):
             self.lineEdit_anki_user,
             self.label_anki_user_verfied,
             self.label_anki_user_verify_btn,
+        )
+        self.anki_audio, self.anki_audio_verified = self.get_and_set_settings(
+            "audio",
+            f"{self.home_directory}/Library/Application Support/Anki2/{self.anki_user}/collection.media",
+            self.lineEdit_anki_audio_path,
+            self.label_anki_audio_path_verfied,
+            self.label_anki_audio_path_verify_btn,
         )
         self.settings.end_group()
 
@@ -196,46 +218,63 @@ class SettingsPage(QWidget):
         self.settings.end_group()
         self.get_settings()
 
+    def response_update(
+        self, response, key, value, icon_label, verify_btn, model_verified
+    ):
+        if value in response:
+            self.change_setting(key, value, True)
+            icon_label.setIcon(self.check_icon)
+            verify_btn.setDisabled(True)
+            model_verified = True
+        else:
+            verify_btn.setDisabled(False)
+            icon_label.setIcon(self.check_icon if model_verified else self.x_icon)
+
+    def verify_anki_user_audio_path(self):
+        isExist = os.path.exists(self.anki_audio)
+        self.response_update(
+            [f"{self.anki_audio if isExist else False}"],
+            "audio",
+            self.anki_audio,
+            self.label_anki_audio_path_verfied,
+            self.label_anki_audio_path_verify_btn,
+            self.anki_audio_verified,
+        )
+
     def deck_response(self, response):
         res = response["result"]
         print(res)
-        if self.words_deck in res:
-            self.change_setting("words", self.words_deck, True)
-            self.label_anki_words_deck_verfied.setIcon(self.check_icon)
-            self.label_anki_words_verify_btn.setDisabled(True)
-            self.words_verified = True
-        else:
-            self.label_anki_words_verify_btn.setDisabled(False)
-        self.label_anki_words_deck_verfied.setIcon(
-            self.check_icon if self.words_verified else self.x_icon
+        self.response_update(
+            res,
+            "words",
+            self.words_deck,
+            self.label_anki_words_deck_verfied,
+            self.label_anki_words_verify_btn,
+            self.words_verified,
         )
 
     def model_response(self, response):
         res = response["result"]
         print(res)
-        if self.model_deck in res:
-            self.change_setting("model", self.model_deck, True)
-            self.label_anki_model_deck_verfied.setIcon(self.check_icon)
-            self.label_anki_model_verify_btn.setDisabled(True)
-            self.model_verified = True
-        else:
-            self.label_anki_model_verify_btn.setDisabled(False)
-        self.label_anki_model_deck_verfied.setIcon(
-            self.check_icon if self.model_verified else self.x_icon
+        self.response_update(
+            res,
+            "model",
+            self.model_deck,
+            self.label_anki_model_deck_verfied,
+            self.label_anki_model_verify_btn,
+            self.model_verified,
         )
 
     def user_response(self, response):
         res = response["result"]
         print(res)
-        if self.anki_user in res:
-            self.change_setting("user", self.anki_user, True)
-            self.label_anki_user_verfied.setIcon(self.check_icon)
-            self.label_anki_user_verify_btn.setDisabled(True)
-            self.anki_user_verified = True
-        else:
-            self.label_anki_user_verify_btn.setDisabled(False)
-        self.label_anki_user_verfied.setIcon(
-            self.check_icon if self.anki_user_verified else self.x_icon
+        self.response_update(
+            res,
+            "user",
+            self.anki_user,
+            self.label_anki_user_verfied,
+            self.label_anki_user_verify_btn,
+            self.anki_user_verified,
         )
 
     def create_input_fields(self, label_text, verify_button_text):
