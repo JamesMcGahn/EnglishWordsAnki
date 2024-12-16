@@ -98,28 +98,36 @@ class SettingsPage(QWidget):
 
     def get_settings(self):
         self.settings.begin_group("settings")
-        self.words_deck = self.settings.get_value("words", "")
-        self.model_deck = self.settings.get_value("model", "")
-        self.anki_user = self.settings.get_value("user", "User 1")
-        self.words_verified = self.settings.get_value("words-verified", False)
-        self.model_verified = self.settings.get_value("model-verified", False)
-        self.anki_user_verified = self.settings.get_value("user-verified", False)
-        self.lineEdit_anki_words_deck.setText(self.words_deck)
-        self.lineEdit_anki_model_deck.setText(self.model_deck)
-        self.lineEdit_anki_user.setText(self.anki_user)
-        self.label_anki_words_deck_verfied.setIcon(
-            self.check_icon if self.words_verified else self.x_icon
+        self.words_deck, self.words_verified = self.get_and_set_settings(
+            "words",
+            "",
+            self.lineEdit_anki_words_deck,
+            self.label_anki_words_deck_verfied,
+            self.label_anki_words_verify_btn,
         )
-        self.label_anki_model_deck_verfied.setIcon(
-            self.check_icon if self.model_verified else self.x_icon
+        self.model_deck, self.model_verified = self.get_and_set_settings(
+            "model",
+            "",
+            self.lineEdit_anki_model_deck,
+            self.label_anki_model_deck_verfied,
+            self.label_anki_model_verify_btn,
         )
-        self.label_anki_user_verfied.setIcon(
-            self.check_icon if self.anki_user_verified else self.x_icon
+        self.anki_user, self.anki_user_verified = self.get_and_set_settings(
+            "user",
+            "User 1",
+            self.lineEdit_anki_user,
+            self.label_anki_user_verfied,
+            self.label_anki_user_verify_btn,
         )
-        self.label_anki_words_verify_btn.setDisabled(self.words_verified)
-        self.label_anki_model_verify_btn.setDisabled(self.model_verified)
-        self.label_anki_user_verify_btn.setDisabled(self.anki_user_verified)
         self.settings.end_group()
+
+    def get_and_set_settings(self, key, default, lineEdit, verify_icon_btn, verify_btn):
+        value = self.settings.get_value(key, default)
+        verified = self.settings.get_value(f"{key}-verified", False)
+        lineEdit.setText(value)
+        verify_icon_btn.setIcon(self.check_icon if verified else self.x_icon)
+        verify_btn.setDisabled(verified)
+        return value, verified
 
     def run_network_check(
         self, task_id, url, json_data, success_callback, error_callback, btn
@@ -222,12 +230,12 @@ class SettingsPage(QWidget):
         if self.anki_user in res:
             self.change_setting("user", self.anki_user, True)
             self.label_anki_user_verfied.setIcon(self.check_icon)
-            self.label_anki_model_verify_btn.setDisabled(True)
-            self.model_verified = True
+            self.label_anki_user_verify_btn.setDisabled(True)
+            self.anki_user_verified = True
         else:
-            self.label_anki_model_verify_btn.setDisabled(False)
+            self.label_anki_user_verify_btn.setDisabled(False)
         self.label_anki_user_verfied.setIcon(
-            self.check_icon if self.model_verified else self.x_icon
+            self.check_icon if self.anki_user_verified else self.x_icon
         )
 
     def create_input_fields(self, label_text, verify_button_text):
