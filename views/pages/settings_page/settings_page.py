@@ -24,7 +24,7 @@ class SettingsPage(QWidget):
     def __init__(self):
         super().__init__()
         self.settings_page_layout = QVBoxLayout(self)
-
+        self.running_tasks = {}
         self.x_icon = QIcon()
         self.x_icon.addFile(
             ":/images/red_check.png",
@@ -86,6 +86,12 @@ class SettingsPage(QWidget):
                 word,
             )
         )
+        self.lineEdit_anki_user.textChanged.connect(
+            lambda word, field="user": self.change_setting(
+                field,
+                word,
+            )
+        )
 
         home_directory = os.path.expanduser("~")
         print("home", home_directory)
@@ -115,55 +121,63 @@ class SettingsPage(QWidget):
         self.label_anki_user_verify_btn.setDisabled(self.anki_user_verified)
         self.settings.end_group()
 
+    def run_network_check(
+        self, task_id, url, json_data, success_callback, error_callback, btn
+    ):
+        network_thread = QThread(self)
+
+        worker = NetworkWorker(url, json=json_data)
+        worker.moveToThread(network_thread)
+
+        # Signal-Slot Connections
+        worker.response.connect(success_callback)
+        worker.error.connect(error_callback)
+        network_thread.started.connect(worker.do_work)
+        worker.finished.connect(lambda: self.cleanup_task(task_id))
+        network_thread.finished.connect(network_thread.deleteLater)
+        self.running_tasks[task_id] = (network_thread, worker)
+        # Disable Button & Start Thread
+        btn.setDisabled(True)
+        network_thread.start()
+
+    def cleanup_task(self, task_id):
+        if task_id in self.running_tasks:
+            _, worker = self.running_tasks.pop(task_id)
+            worker.deleteLater()
+            print(f"Task {task_id} cleaned up.")
+
     def verify_deck_name(self):
-        json = {"action": "deckNames", "version": 6}
-        self.net_check_deck = QThread(self)
-
-        self.check_deck = NetworkWorker("http://127.0.0.1:8765/", json=json)
-
-        self.check_deck.moveToThread(self.net_check_deck)
-        self.check_deck.response.connect(self.deck_response)
-        self.net_check_deck.started.connect(self.check_deck.do_work)
-        self.net_check_deck.start()
-        self.label_anki_words_verify_btn.setDisabled(True)
-        self.check_deck.finished.connect(self.check_deck.deleteLater)
-        self.net_check_deck.finished.connect(self.net_check_deck.deleteLater)
-        self.check_deck.error.connect(
-            lambda: self.label_anki_words_verify_btn.setDisabled(False)
+        json_data = {"action": "deckNames", "version": 6}
+        print("here")
+        self.run_network_check(
+            "verify_deck_name",
+            "http://127.0.0.1:8765/",
+            json_data,
+            self.deck_response,
+            lambda: self.label_anki_words_verify_btn.setDisabled(False),
+            self.label_anki_words_verify_btn,
         )
 
     def verify_deck_model(self):
-        json = {"action": "modelNames", "version": 6}
-        self.net_check_model = QThread(self)
-
-        self.check_model = NetworkWorker("http://127.0.0.1:8765/", json=json)
-
-        self.check_model.moveToThread(self.net_check_model)
-        self.check_model.response.connect(self.model_response)
-        self.net_check_model.started.connect(self.check_model.do_work)
-        self.net_check_model.start()
-        self.label_anki_model_verify_btn.setDisabled(True)
-        self.check_model.finished.connect(self.check_model.deleteLater)
-        self.net_check_model.finished.connect(self.net_check_model.deleteLater)
-        self.check_model.error.connect(
-            lambda: self.label_anki_model_verify_btn.setDisabled(False)
+        json_data = {"action": "modelNames", "version": 6}
+        self.run_network_check(
+            "verify_deck_model",
+            "http://127.0.0.1:8765/",
+            json_data,
+            self.model_response,
+            lambda: self.label_anki_model_verify_btn.setDisabled(False),
+            self.label_anki_model_verify_btn,
         )
 
     def verify_anki_user(self):
-        json = {"action": "getProfiles", "version": 6}
-        self.net_check_user = QThread(self)
-
-        self.check_user = NetworkWorker("http://127.0.0.1:8765/", json=json)
-
-        self.check_user.moveToThread(self.net_check_user)
-        self.check_user.response.connect(self.user_response)
-        self.net_check_user.started.connect(self.check_user.do_work)
-        self.net_check_user.start()
-        self.label_anki_user_verify_btn.setDisabled(True)
-        self.check_user.finished.connect(self.check_user.deleteLater)
-        self.net_check_user.finished.connect(self.net_check_user.deleteLater)
-        self.check_user.error.connect(
-            lambda: self.label_anki_user_verify_btn.setDisabled(False)
+        json_data = {"action": "getProfiles", "version": 6}
+        self.run_network_check(
+            "verify_anki_user",
+            "http://127.0.0.1:8765/",
+            json_data,
+            self.user_response,
+            lambda: self.label_anki_user_verify_btn.setDisabled(False),
+            self.label_anki_user_verify_btn,
         )
 
     def change_setting(self, field, value, verified=False):
