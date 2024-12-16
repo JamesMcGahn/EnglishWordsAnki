@@ -24,16 +24,7 @@ class SettingsPage(QWidget):
     def __init__(self):
         super().__init__()
         self.settings_page_layout = QVBoxLayout(self)
-        self.label_anki_words_deck = QLabel("Word's Deck Name:")
-        self.label_anki_words_deck.setMinimumWidth(143)
-        self.lineEdit_anki_words_deck = QLineEdit()
-        self.lineEdit_anki_words_deck.setMaximumWidth(230)
-        self.label_anki_words_deck_verfied = QPushButton()
-        self.label_anki_words_deck_verfied.setMaximumWidth(40)
-        self.label_anki_words_deck_verfied.setObjectName("anki_verify_icon_w")
-        self.label_anki_words_deck_verfied.setStyleSheet(
-            """QPushButton#anki_verify_icon_w{background:transparent;border: none;}"""
-        )
+
         self.x_icon = QIcon()
         self.x_icon.addFile(
             ":/images/red_check.png",
@@ -47,56 +38,30 @@ class SettingsPage(QWidget):
             QIcon.Mode.Normal,
         )
 
-        self.label_anki_words_verify_btn = QPushButton("Verify Deck")
-        self.anki_words_deck_hlayout = QHBoxLayout()
-        self.anki_words_deck_hlayout.setSpacing(10)
-        # self.anki_words_deck_hlayout.addItem(hspacer)
-        self.anki_words_deck_hlayout.addWidget(self.label_anki_words_deck)
-        self.anki_words_deck_hlayout.addWidget(self.lineEdit_anki_words_deck)
-        self.anki_words_deck_hlayout.addWidget(self.label_anki_words_deck_verfied)
-        self.anki_words_deck_hlayout.addWidget(self.label_anki_words_verify_btn)
-
         hspacer = QSpacerItem(400, 1, QSizePolicy.Expanding, QSizePolicy.Minimum)
         vspacer = QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Expanding)
         # self.settings_page_layout.addItem(hspacer)
 
-        self.label_anki_model_deck = QLabel("Word's Model Name:")
-        self.label_anki_model_deck.setMinimumWidth(143)
-        self.lineEdit_anki_model_deck = QLineEdit()
-        self.lineEdit_anki_model_deck.setMaximumWidth(230)
-        self.label_anki_model_deck_verfied = QPushButton()
-        self.label_anki_model_deck_verfied.setMaximumWidth(40)
-        self.label_anki_model_deck_verfied.setObjectName("anki_verify_icon_w")
-        self.label_anki_model_deck_verfied.setStyleSheet(
-            """QPushButton#anki_verify_icon_w{background:transparent;border: none;}"""
-        )
-        self.label_anki_model_verify_btn = QPushButton("Verify Deck")
-        self.anki_model_deck_hlayout = QHBoxLayout()
-        self.anki_model_deck_hlayout.setSpacing(10)
-        # self.anki_model_deck_hlayout.addItem(hspacer)
-        self.anki_model_deck_hlayout.addWidget(self.label_anki_model_deck)
-        self.anki_model_deck_hlayout.addWidget(self.lineEdit_anki_model_deck)
-        self.anki_model_deck_hlayout.addWidget(self.label_anki_model_deck_verfied)
-        self.anki_model_deck_hlayout.addWidget(self.label_anki_model_verify_btn)
+        (
+            self.lineEdit_anki_words_deck,
+            self.label_anki_words_deck_verfied,
+            self.label_anki_words_verify_btn,
+            self.anki_words_deck_hlayout,
+        ) = self.create_input_fields("Word's Deck Name:", "Verify Deck")
 
-        self.label_anki_user = QLabel("Anki User Name:")
-        self.label_anki_user.setMinimumWidth(143)
-        self.lineEdit_anki_user = QLineEdit()
-        self.lineEdit_anki_user.setMaximumWidth(230)
-        self.label_anki_user_verfied = QPushButton()
-        self.label_anki_user_verfied.setMaximumWidth(40)
-        self.label_anki_user_verfied.setObjectName("anki_verify_icon_w")
-        self.label_anki_user_verfied.setStyleSheet(
-            """QPushButton#anki_verify_icon_w{background:transparent;border: none;}"""
-        )
-        self.label_anki_user_verify_btn = QPushButton("Verify User")
-        self.anki_user_hlayout = QHBoxLayout()
-        self.anki_user_hlayout.setSpacing(10)
-        # self.anki_user_hlayout.addItem(hspacer)
-        self.anki_user_hlayout.addWidget(self.label_anki_user)
-        self.anki_user_hlayout.addWidget(self.lineEdit_anki_user)
-        self.anki_user_hlayout.addWidget(self.label_anki_user_verfied)
-        self.anki_user_hlayout.addWidget(self.label_anki_user_verify_btn)
+        (
+            self.lineEdit_anki_model_deck,
+            self.label_anki_model_deck_verfied,
+            self.label_anki_model_verify_btn,
+            self.anki_model_deck_hlayout,
+        ) = self.create_input_fields("Word's Model Name:", "Verify Model")
+
+        (
+            self.lineEdit_anki_user,
+            self.label_anki_user_verfied,
+            self.label_anki_user_verify_btn,
+            self.anki_user_hlayout,
+        ) = self.create_input_fields("Anki User Name:", "Verify User")
 
         self.settings_page_layout.addLayout(self.anki_words_deck_hlayout)
         self.settings_page_layout.addLayout(self.anki_model_deck_hlayout)
@@ -250,3 +215,20 @@ class SettingsPage(QWidget):
         self.label_anki_user_verfied.setIcon(
             self.check_icon if self.model_verified else self.x_icon
         )
+
+    def create_input_fields(self, label_text, verify_button_text):
+        label = QLabel(label_text)
+        label.setMinimumWidth(143)
+        line_edit_field = QLineEdit()
+        line_edit_field.setMaximumWidth(230)
+        verify_icon_button = QPushButton()
+        verify_icon_button.setMaximumWidth(40)
+        verify_icon_button.setStyleSheet("background:transparent;border: none;")
+        verify_button = QPushButton(verify_button_text)
+        h_layout = QHBoxLayout()
+        h_layout.setSpacing(10)
+        h_layout.addWidget(label)
+        h_layout.addWidget(line_edit_field)
+        h_layout.addWidget(verify_icon_button)
+        h_layout.addWidget(verify_button)
+        return line_edit_field, verify_icon_button, verify_button, h_layout
