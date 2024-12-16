@@ -78,7 +78,7 @@ class SettingsPage(QWidget):
         self.settings = AppSettings()
         self.home_directory = os.path.expanduser("~")
         print("home", self.home_directory)
-        self.get_settings()
+        self.get_settings("ALL", setText=True)
 
         self.label_anki_words_verify_btn.clicked.connect(self.verify_deck_name)
         self.label_anki_model_verify_btn.clicked.connect(self.verify_deck_model)
@@ -111,42 +111,72 @@ class SettingsPage(QWidget):
             )
         )
 
-    def get_settings(self):
+    def get_settings(self, setting="ALL", setText=False):
         self.settings.begin_group("settings")
-        self.words_deck, self.words_verified = self.get_and_set_settings(
-            "words",
-            "",
-            self.lineEdit_anki_words_deck,
-            self.label_anki_words_deck_verfied,
-            self.label_anki_words_verify_btn,
-        )
-        self.model_deck, self.model_verified = self.get_and_set_settings(
-            "model",
-            "",
-            self.lineEdit_anki_model_deck,
-            self.label_anki_model_deck_verfied,
-            self.label_anki_model_verify_btn,
-        )
-        self.anki_user, self.anki_user_verified = self.get_and_set_settings(
-            "user",
-            "User 1",
-            self.lineEdit_anki_user,
-            self.label_anki_user_verfied,
-            self.label_anki_user_verify_btn,
-        )
-        self.anki_audio, self.anki_audio_verified = self.get_and_set_settings(
-            "audio",
-            f"{self.home_directory}/Library/Application Support/Anki2/{self.anki_user}/collection.media",
-            self.lineEdit_anki_audio_path,
-            self.label_anki_audio_path_verfied,
-            self.label_anki_audio_path_verify_btn,
-        )
+
+        def words_deck():
+            self.words_deck, self.words_verified = self.get_and_set_settings(
+                "words",
+                "",
+                self.lineEdit_anki_words_deck,
+                self.label_anki_words_deck_verfied,
+                self.label_anki_words_verify_btn,
+                setText,
+            )
+
+        def model_deck():
+            self.model_deck, self.model_verified = self.get_and_set_settings(
+                "model",
+                "",
+                self.lineEdit_anki_model_deck,
+                self.label_anki_model_deck_verfied,
+                self.label_anki_model_verify_btn,
+                setText,
+            )
+
+        def anki_user():
+            self.anki_user, self.anki_user_verified = self.get_and_set_settings(
+                "user",
+                "User 1",
+                self.lineEdit_anki_user,
+                self.label_anki_user_verfied,
+                self.label_anki_user_verify_btn,
+                setText,
+            )
+
+        def anki_audio_path():
+            self.anki_audio, self.anki_audio_verified = self.get_and_set_settings(
+                "audio",
+                f"{self.home_directory}/Library/Application Support/Anki2/{self.anki_user}/collection.media",
+                self.lineEdit_anki_audio_path,
+                self.label_anki_audio_path_verfied,
+                self.label_anki_audio_path_verify_btn,
+                setText,
+            )
+
+        match setting:
+            case "WORDS_DECK":
+                words_deck()
+            case "MODEL_DECK":
+                model_deck()
+            case "ANKI_USER":
+                anki_user()
+            case "ANKI_AUDIO_PATH":
+                anki_audio_path()
+            case "ALL":
+                words_deck()
+                model_deck()
+                anki_user()
+                anki_audio_path()
         self.settings.end_group()
 
-    def get_and_set_settings(self, key, default, lineEdit, verify_icon_btn, verify_btn):
+    def get_and_set_settings(
+        self, key, default, lineEdit, verify_icon_btn, verify_btn, setText=False
+    ):
         value = self.settings.get_value(key, default)
         verified = self.settings.get_value(f"{key}-verified", False)
-        lineEdit.setText(value)
+        if setText:
+            lineEdit.setText(value)
         verify_icon_btn.setIcon(self.check_icon if verified else self.x_icon)
         verify_btn.setDisabled(verified)
         return value, verified
@@ -156,7 +186,7 @@ class SettingsPage(QWidget):
     ):
         network_thread = QThread(self)
 
-        worker = NetworkWorker(url, json=json_data)
+        worker = NetworkWorker(url, json=json_data, timeout=25)
         worker.moveToThread(network_thread)
 
         # Signal-Slot Connections
@@ -210,19 +240,26 @@ class SettingsPage(QWidget):
             self.label_anki_user_verify_btn,
         )
 
-    def change_setting(self, field, value, verified=False):
+    def change_setting(self, field, value, verified=False, setting_type="ALL"):
         print(field, value)
         self.settings.begin_group("settings")
         self.settings.set_value(field, value)
         self.settings.set_value(f"{field}-verified", verified)
         self.settings.end_group()
-        self.get_settings()
+        self.get_settings(setting_type, setText=False)
 
     def response_update(
-        self, response, key, value, icon_label, verify_btn, model_verified
+        self,
+        response,
+        key,
+        value,
+        icon_label,
+        verify_btn,
+        model_verified,
+        setting_type="ALL",
     ):
         if value in response:
-            self.change_setting(key, value, True)
+            self.change_setting(key, value, True, setting_type)
             icon_label.setIcon(self.check_icon)
             verify_btn.setDisabled(True)
             model_verified = True
@@ -239,6 +276,7 @@ class SettingsPage(QWidget):
             self.label_anki_audio_path_verfied,
             self.label_anki_audio_path_verify_btn,
             self.anki_audio_verified,
+            "ANKI_AUDIO_PATH",
         )
 
     def deck_response(self, response):
@@ -251,6 +289,7 @@ class SettingsPage(QWidget):
             self.label_anki_words_deck_verfied,
             self.label_anki_words_verify_btn,
             self.words_verified,
+            "WORDS_DECK",
         )
 
     def model_response(self, response):
@@ -263,6 +302,7 @@ class SettingsPage(QWidget):
             self.label_anki_model_deck_verfied,
             self.label_anki_model_verify_btn,
             self.model_verified,
+            "MODEL_DECK",
         )
 
     def user_response(self, response):
@@ -275,6 +315,7 @@ class SettingsPage(QWidget):
             self.label_anki_user_verfied,
             self.label_anki_user_verify_btn,
             self.anki_user_verified,
+            "ANKI_USER",
         )
 
     def create_input_fields(self, label_text, verify_button_text):

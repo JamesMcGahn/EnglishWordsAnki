@@ -7,15 +7,17 @@ class NetworkWorker(QObject):
     response = Signal(object)
     error = Signal(str)
 
-    def __init__(self, url, json):
+    def __init__(self, url, json, timeout):
         super().__init__()
         self.url = url
         self.json = json
+        self.timeout = timeout
 
     @Slot()
     def do_work(self):
         try:
-            request = requests.get(self.url, json=self.json, timeout=10)
+            print(self.url)
+            request = requests.get(self.url, json=self.json, timeout=self.timeout)
             res = request.json()
             self.response.emit(res)
         except requests.exceptions.ConnectionError as e:
