@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from core import AppleNoteImport
 from services.network import NetworkWorker
 from services.settings import AppSettings
 
@@ -43,6 +44,12 @@ class SettingsPage(QWidget):
         # self.settings_page_layout.addItem(hspacer)
 
         (
+            self.lineEdit_apple_note,
+            self.label_apple_note_verfied,
+            self.label_apple_note_verify_btn,
+            self.apple_note_hlayout,
+        ) = self.create_input_fields("Apple Note Name:", "Verify Apple Note")
+        (
             self.lineEdit_anki_words_deck,
             self.label_anki_words_deck_verfied,
             self.label_anki_words_verify_btn,
@@ -69,6 +76,7 @@ class SettingsPage(QWidget):
             self.anki_audio_path_hlayout,
         ) = self.create_input_fields("Anki Audio path:", "Verify Audio Path")
 
+        self.settings_page_layout.addLayout(self.apple_note_hlayout)
         self.settings_page_layout.addLayout(self.anki_words_deck_hlayout)
         self.settings_page_layout.addLayout(self.anki_model_deck_hlayout)
         self.settings_page_layout.addLayout(self.anki_user_hlayout)
@@ -80,11 +88,18 @@ class SettingsPage(QWidget):
         print("home", self.home_directory)
         self.get_settings("ALL", setText=True)
 
+        self.label_apple_note_verify_btn.clicked.connect(self.verify_apple_note_name)
         self.label_anki_words_verify_btn.clicked.connect(self.verify_deck_name)
         self.label_anki_model_verify_btn.clicked.connect(self.verify_deck_model)
         self.label_anki_user_verify_btn.clicked.connect(self.verify_anki_user)
         self.label_anki_audio_path_verify_btn.clicked.connect(
             self.verify_anki_user_audio_path
+        )
+        self.lineEdit_apple_note.textChanged.connect(
+            lambda word, field="apple_note": self.change_setting(
+                field,
+                word,
+            )
         )
         self.lineEdit_anki_words_deck.textChanged.connect(
             lambda word, field="words": self.change_setting(
@@ -154,6 +169,16 @@ class SettingsPage(QWidget):
                 setText,
             )
 
+        def apple_note():
+            self.apple_note, self.apple_note_verified = self.get_and_set_settings(
+                "apple_note",
+                f"{self.home_directory}/Library/Application Support/Anki2/{self.anki_user}/collection.media",
+                self.lineEdit_apple_note,
+                self.label_apple_note_verfied,
+                self.label_apple_note_verify_btn,
+                setText,
+            )
+
         match setting:
             case "WORDS_DECK":
                 words_deck()
@@ -163,11 +188,14 @@ class SettingsPage(QWidget):
                 anki_user()
             case "ANKI_AUDIO_PATH":
                 anki_audio_path()
+            case "APPLE_NOTE":
+                apple_note()
             case "ALL":
                 words_deck()
                 model_deck()
                 anki_user()
                 anki_audio_path()
+                apple_note()
         self.settings.end_group()
 
     def get_and_set_settings(
@@ -205,6 +233,17 @@ class SettingsPage(QWidget):
             _, worker = self.running_tasks.pop(task_id)
             worker.deleteLater()
             print(f"Task {task_id} cleaned up.")
+
+    def verify_apple_note_name(self):
+        self.label_apple_note_verify_btn.setDisabled(False)
+        self.apple_note_thread = QThread(self)
+        self.apple_worker = AppleNoteImport(self.lineEdit_apple_note.text())
+        self.apple_worker.moveToThread(self.apple_note_thread)
+        self.apple_worker.note_name_verified.connect(self.apple_note_response)
+        self.apple_note_thread.finished.connect(self.deleteLater)
+        self.apple_note_thread.started.connect(self.apple_worker.verify_note_name)
+        self.apple_worker.finished.connect(self.apple_worker.deleteLater)
+        self.apple_note_thread.start()
 
     def verify_deck_name(self):
         json_data = {"action": "deckNames", "version": 6}
@@ -277,6 +316,17 @@ class SettingsPage(QWidget):
             self.label_anki_audio_path_verify_btn,
             self.anki_audio_verified,
             "ANKI_AUDIO_PATH",
+        )
+
+    def apple_note_response(self, response):
+        self.response_update(
+            [f"{self.apple_note if response else False}"],
+            "apple_note",
+            self.apple_note,
+            self.label_apple_note_verfied,
+            self.label_apple_note_verify_btn,
+            self.apple_note_verified,
+            "APPLE_NOTE",
         )
 
     def deck_response(self, response):
