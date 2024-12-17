@@ -7,13 +7,12 @@ from PySide6.QtCore import QObject, Signal, Slot
 class AppleNoteImport(QObject):
     result = Signal(list)
     finished = Signal()
-    start_work = Signal()
+    note_name_verified = Signal(bool)
 
     def __init__(self, noteName):
         super().__init__()
         self.content = None
         self.noteName = noteName
-        self.start_work.connect(self.do_work)
 
     @Slot()
     def do_work(self):
@@ -29,6 +28,25 @@ class AppleNoteImport(QObject):
             self.result.emit(self.content)
         else:
             self.result.emit([])
+        self.finished.emit()
+
+    @Slot()
+    def verify_note_name(self):
+        self.open_notes_app()
+        applescript = f"""
+        tell application "Notes"
+            activate
+            set theNote to the first note whose name equals "{self.noteName}"
+            set title to the name of theNote
+        end tell
+        return title
+        """
+        result = subprocess.run(
+            ["osascript", "-e", applescript], capture_output=True, text=True
+        )
+        test = result.stdout.strip()
+        print(result.stdout.strip())
+        self.note_name_verified.emit(test == self.noteName)
         self.finished.emit()
 
     def open_notes_app(self):

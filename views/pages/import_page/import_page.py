@@ -132,14 +132,14 @@ class ImportPage(QWidget):
 
     def import_words_from_apple_notes(self):
         self.appleNoteThread = QThread()
-        self.appleNoteThread.start()
         self.appleImport = AppleNoteImport("Words")
         self.appleImport.moveToThread(self.appleNoteThread)
         self.appleImport.result.connect(self.receive_words)
         self.appleImport.finished.connect(self.appleImport.deleteLater)
         self.appleImport.finished.connect(self.appleNoteThread.quit)
-
-        self.appleImport.start_work.emit()
+        self.appleNoteThread.finished.connect(self.appleNoteThread.deleteLater)
+        self.appleNoteThread.started.connect(self.appleImport.do_work)
+        self.appleNoteThread.start()
 
     def receive_words(self, words):
         for word in words:
