@@ -34,9 +34,5 @@ class MainWindow(QMainWindow):
         self.centralWidget = CentralWidget()
         self.setCentralWidget(self.centralWidget)
 
-    def receive_audio_words(self, succeeded_words, errored_words):
-        print(succeeded_words, errored_words)
-        self.anki_thread = AnkiExportThread(
-            succeeded_words, "English Words", "English Vocab"
-        )
-        self.anki_thread.start()
+
+# TODO: on closeEvent send signal to shut down any running threads
