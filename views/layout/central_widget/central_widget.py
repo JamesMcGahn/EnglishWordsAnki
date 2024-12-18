@@ -2,11 +2,13 @@ from PySide6.QtCore import Qt, Signal, Slot
 from PySide6.QtGui import QLinearGradient, QPainter, QPaintEvent
 from PySide6.QtWidgets import QGridLayout, QWidget
 
+from base import QWidgetBase
+
 from ..main_screen import MainScreen
 from ..navbars import HeaderNavBar, IconOnlyNavBar, IconTextNavBar
 
 
-class CentralWidget(QWidget):
+class CentralWidget(QWidgetBase):
     close_main_window = Signal()
 
     def __init__(self):
@@ -48,7 +50,8 @@ class CentralWidget(QWidget):
             self.main_screen_widget.change_page
         )
         self.main_screen_widget.close_main_window.connect(self.close_icon_clicked)
-
+        self.main_screen_widget.send_logs.connect(self.logging)
+        self.appshutdown.connect(self.main_screen_widget.notified_app_shutting)
         self.main_screen_widget.page_changed.connect(self.page_changed)
 
     def paintEvent(self, event: QPaintEvent) -> None:

@@ -1,10 +1,12 @@
 from PySide6.QtCore import Signal, Slot
-from PySide6.QtWidgets import QPushButton, QWidget
+from PySide6.QtWidgets import QPushButton
+
+from base import QWidgetBase
 
 from .main_screen_ui import MainScreenView
 
 
-class MainScreen(QWidget):
+class MainScreen(QWidgetBase):
     """
     MainScreen serves as the controller for the MainScreenView. It manages
     interactions between different parts of the view, such as changing pages and
@@ -44,6 +46,10 @@ class MainScreen(QWidget):
         self.ui.audio_page.start_sync_for_words.connect(
             self.ui.sync_page.start_sync_words
         )
+        self.appshutdown.connect(self.ui.import_page.notified_app_shutting)
+        self.appshutdown.connect(self.ui.define_page.notified_app_shutting)
+        self.appshutdown.connect(self.ui.audio_page.notified_app_shutting)
+        self.appshutdown.connect(self.ui.sync_page.notified_app_shutting)
 
     def int_change_page(self, index):
         print(index)

@@ -1,15 +1,14 @@
 from PySide6.QtCore import QSize, QThread, Signal
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QCloseEvent, QFont
 from PySide6.QtWidgets import QMainWindow, QPushButton, QVBoxLayout, QWidget
 
-from components.dialogs.multi_selection import MultiSelectionDialog
-from core import AnkiExportThread, AppleNoteImport, AudioThread, WordLookupWorker
+from services.logger import Logger
 from views.layout import CentralWidget
 
 
 class MainWindow(QMainWindow):
-    user_definition_selection = Signal(list)
-    user_word_selection = Signal(int)
+    appshutdown = Signal()
+    send_logs = Signal(str, str, bool)
 
     def __init__(self, app):
         super().__init__()
@@ -33,6 +32,22 @@ class MainWindow(QMainWindow):
 
         self.centralWidget = CentralWidget()
         self.setCentralWidget(self.centralWidget)
+        self.logger = Logger(turn_off_print=False)
+        self.send_logs.connect(self.logger.insert)
+        self.centralWidget.send_logs.connect(self.logger.insert)
+        self.appshutdown.connect(self.logger.close)
+        self.appshutdown.connect(self.centralWidget.notified_app_shutting)
 
+    def closeEvent(self, event: QCloseEvent) -> None:
+        """
+        Handle the close event to emit the shutdown signals and ensure the application closes properly.
 
-# TODO: on closeEvent send signal to shut down any running threads
+        Args:
+            event (QCloseEvent): The close event triggered when the user attempts to close the window.
+
+        Returns:
+            None: This function does not return a value.
+        """
+        self.send_logs.emit("Closing Application", "INFO", True)
+        self.appshutdown.emit()
+        event.accept()
