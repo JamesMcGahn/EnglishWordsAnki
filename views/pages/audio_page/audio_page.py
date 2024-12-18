@@ -5,15 +5,15 @@ from PySide6.QtWidgets import (
     QListWidgetItem,
     QPushButton,
     QVBoxLayout,
-    QWidget,
 )
 
+from base import QWidgetBase
 from components.dialogs import EditWordDialog
 from core import AudioThread
 from models import Status, WordModel, WordsModel
 
 
-class AudioPage(QWidget):
+class AudioPage(QWidgetBase):
     save_words_to_model = Signal()
     add_word_to_audio_queue = Signal(WordModel)
     update_word_model = Signal(str, WordModel)

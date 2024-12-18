@@ -11,16 +11,17 @@ from PySide6.QtWidgets import (
     QPushButton,
     QSizePolicy,
     QSpacerItem,
+    QTextEdit,
     QVBoxLayout,
-    QWidget,
 )
 
+from base import QWidgetBase
 from core import AppleNoteImport
 from services.network import NetworkWorker
 from services.settings import AppSettings
 
 
-class SettingsPage(QWidget):
+class SettingsPage(QWidgetBase):
 
     def __init__(self):
         super().__init__()
@@ -75,12 +76,19 @@ class SettingsPage(QWidget):
             self.label_anki_audio_path_verify_btn,
             self.anki_audio_path_hlayout,
         ) = self.create_input_fields("Anki Audio path:", "Verify Audio Path")
+        (
+            self.textEdit_google_api_key_path,
+            self.label_google_api_key_path_verfied,
+            self.label_google_api_key_path_verify_btn,
+            self.google_api_key_path_hlayout,
+        ) = self.create_input_fields("Google Service:", "Verify Google Service", False)
 
         self.settings_page_layout.addLayout(self.apple_note_hlayout)
         self.settings_page_layout.addLayout(self.anki_words_deck_hlayout)
         self.settings_page_layout.addLayout(self.anki_model_deck_hlayout)
         self.settings_page_layout.addLayout(self.anki_user_hlayout)
         self.settings_page_layout.addLayout(self.anki_audio_path_hlayout)
+        self.settings_page_layout.addLayout(self.google_api_key_path_hlayout)
         self.settings_page_layout.addItem(vspacer)
 
         self.settings = AppSettings()
@@ -368,19 +376,34 @@ class SettingsPage(QWidget):
             "ANKI_USER",
         )
 
-    def create_input_fields(self, label_text, verify_button_text):
+    def create_input_fields(self, label_text, verify_button_text, lineEdit=True):
+        h_layout = QHBoxLayout()
         label = QLabel(label_text)
         label.setMinimumWidth(143)
-        line_edit_field = QLineEdit()
-        line_edit_field.setMaximumWidth(230)
+
         verify_icon_button = QPushButton()
         verify_icon_button.setMaximumWidth(40)
         verify_icon_button.setStyleSheet("background:transparent;border: none;")
         verify_button = QPushButton(verify_button_text)
-        h_layout = QHBoxLayout()
+
         h_layout.setSpacing(10)
         h_layout.addWidget(label)
-        h_layout.addWidget(line_edit_field)
+
         h_layout.addWidget(verify_icon_button)
+
+        if lineEdit:
+            line_edit_field = QLineEdit()
+            line_edit_field.setMaximumWidth(230)
+            h_layout.addWidget(line_edit_field)
+        else:
+            text_edit_field = QTextEdit()
+            text_edit_field.setMaximumWidth(230)
+            h_layout.addWidget(text_edit_field)
+
         h_layout.addWidget(verify_button)
-        return line_edit_field, verify_icon_button, verify_button, h_layout
+        return (
+            line_edit_field if lineEdit else text_edit_field,
+            verify_icon_button,
+            verify_button,
+            h_layout,
+        )

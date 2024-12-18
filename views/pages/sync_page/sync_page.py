@@ -5,14 +5,14 @@ from PySide6.QtWidgets import (
     QListWidgetItem,
     QPushButton,
     QVBoxLayout,
-    QWidget,
 )
 
+from base import QWidgetBase
 from core import AnkiExportThread, RemoveDuplicateAudio
 from models import Status, WordModel, WordsModel
 
 
-class SyncPage(QWidget):
+class SyncPage(QWidgetBase):
     save_words_to_model = Signal()
     add_word_to_sync_queue = Signal(WordModel)
     update_word_model = Signal(str, WordModel)

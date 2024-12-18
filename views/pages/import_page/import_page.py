@@ -7,15 +7,15 @@ from PySide6.QtWidgets import (
     QListWidgetItem,
     QPushButton,
     QVBoxLayout,
-    QWidget,
 )
 
+from base import QWidgetBase
 from components.helpers import WidgetFactory
 from core.apple_note_import import AppleNoteImport
 from models import Status, WordModel, WordsModel
 
 
-class ImportPage(QWidget):
+class ImportPage(QWidgetBase):
     add_word_to_model = Signal(WordModel)
     save_words_to_model = Signal()
     to_define_word = Signal(str, Status)

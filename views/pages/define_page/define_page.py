@@ -5,15 +5,15 @@ from PySide6.QtWidgets import (
     QListWidgetItem,
     QPushButton,
     QVBoxLayout,
-    QWidget,
 )
 
+from base import QWidgetBase
 from components.dialogs import EditWordDialog, MultiSelectionDialog
 from core import WordLookupWorker
 from models import Status, WordModel, WordsModel
 
 
-class DefinePage(QWidget):
+class DefinePage(QWidgetBase):
     start_audio_for_words = Signal(int)
     save_words_to_model = Signal()
     user_definition_selection = Signal(list)
