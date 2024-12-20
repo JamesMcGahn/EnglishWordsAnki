@@ -43,6 +43,12 @@ class SettingsPage(QWidgetBase):
             QSize(),
             QIcon.Mode.Normal,
         )
+        self.folder_icon = QIcon()
+        self.folder_icon.addFile(
+            ":/images/open_folder_on.png",
+            QSize(),
+            QIcon.Mode.Normal,
+        )
 
         hspacer = QSpacerItem(400, 1, QSizePolicy.Expanding, QSizePolicy.Minimum)
         vspacer = QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Expanding)
@@ -79,13 +85,19 @@ class SettingsPage(QWidgetBase):
             self.label_anki_audio_path_verfied,
             self.label_anki_audio_path_verify_btn,
             self.anki_audio_path_hlayout,
-        ) = self.create_input_fields("Anki Audio path:", "Verify Audio Path")
+            self.anki_audio_path_folder_btn,
+        ) = self.create_input_fields(
+            "Anki Audio path:", "Verify Audio Path", folder_icon=True
+        )
         (
             self.lineEdit_log_file_path,
             self.label_log_file_path_verfied,
             self.label_log_file_path_verify_btn,
             self.log_file_path_hlayout,
-        ) = self.create_input_fields("Log File path:", "Verify Log Path")
+            self.log_file_path_folder_btn,
+        ) = self.create_input_fields(
+            "Log File path:", "Verify Log Path", folder_icon=True
+        )
         (
             self.textEdit_google_api_key,
             self.label_google_api_key_verfied,
@@ -114,10 +126,21 @@ class SettingsPage(QWidgetBase):
         self.label_anki_model_verify_btn.clicked.connect(self.verify_deck_model)
         self.label_anki_user_verify_btn.clicked.connect(self.verify_anki_user)
         self.label_anki_audio_path_verify_btn.clicked.connect(
-            lambda: self.verify_paths("audio", self.lineEdit_anki_audio_path)
+            lambda: self.open_folder_dialog("audio_path", self.lineEdit_anki_audio_path)
         )
         self.label_log_file_path_verify_btn.clicked.connect(
-            lambda: self.verify_paths("log_file_path", self.lineEdit_log_file_path)
+            lambda: self.open_folder_dialog(
+                "log_file_path", self.lineEdit_log_file_path
+            )
+        )
+
+        self.log_file_path_folder_btn.clicked.connect(
+            lambda: self.open_folder_dialog(
+                "log_file_path", self.lineEdit_log_file_path
+            )
+        )
+        self.anki_audio_path_folder_btn.clicked.connect(
+            lambda: self.open_folder_dialog("audio_path", self.lineEdit_log_file_path)
         )
         self.lineEdit_apple_note.textChanged.connect(
             lambda word, field="apple_note": self.change_setting(
@@ -140,7 +163,7 @@ class SettingsPage(QWidgetBase):
             )
         )
         self.lineEdit_anki_audio_path.textChanged.connect(
-            lambda word, field="audio": self.change_setting(
+            lambda word, field="audio_path": self.change_setting(
                 field, word, setting_type=field
             )
         )
@@ -194,7 +217,7 @@ class SettingsPage(QWidgetBase):
 
         def anki_audio_path():
             self.anki_audio, self.anki_audio_verified = self.get_and_set_settings(
-                "audio",
+                "audio_path",
                 f"{self.home_directory}/Library/Application Support/Anki2/{self.anki_user}/collection.media",
                 self.lineEdit_anki_audio_path,
                 self.label_anki_audio_path_verfied,
@@ -242,7 +265,7 @@ class SettingsPage(QWidgetBase):
                 model_deck()
             case "user":
                 anki_user()
-            case "audio":
+            case "audio_path":
                 anki_audio_path()
             case "apple_note":
                 apple_note()
@@ -378,26 +401,23 @@ class SettingsPage(QWidgetBase):
             verify_btn.setDisabled(False)
             icon_label.setIcon(self.check_icon if model_verified else self.x_icon)
 
-    def verify_paths(self, key, input_field):
-        self.open_folder_dialog(key, input_field)
-
     @Slot(str, str)
     def folder_change(self, key, folder):
         if key == "log_file_path":
             self.verify_log_file_path(folder)
-        elif key == "audio":
+        elif key == "audio_path":
             self.verify_anki_user_audio_path(folder)
 
     def verify_anki_user_audio_path(self, folder):
         isExist = os.path.exists(folder)
         self.response_update(
             [f"{folder if isExist else False}"],
-            "audio",
+            "audio_path",
             folder,
             self.label_anki_audio_path_verfied,
             self.label_anki_audio_path_verify_btn,
             self.anki_audio_verified,
-            "audio",
+            "audio_path",
         )
 
     def verify_log_file_path(self, folder):
@@ -463,8 +483,11 @@ class SettingsPage(QWidgetBase):
             "user",
         )
 
-    def create_input_fields(self, label_text, verify_button_text, lineEdit=True):
+    def create_input_fields(
+        self, label_text, verify_button_text, lineEdit=True, folder_icon=False
+    ):
         h_layout = QHBoxLayout()
+        h_layout.setAlignment(Qt.AlignLeft)
         label = QLabel(label_text)
         label.setMinimumWidth(143)
 
@@ -472,6 +495,7 @@ class SettingsPage(QWidgetBase):
         verify_icon_button.setMaximumWidth(40)
         verify_icon_button.setStyleSheet("background:transparent;border: none;")
         verify_button = QPushButton(verify_button_text)
+        verify_button.setCursor(Qt.PointingHandCursor)
 
         h_layout.setSpacing(10)
         h_layout.addWidget(label)
@@ -486,6 +510,21 @@ class SettingsPage(QWidgetBase):
             h_layout.addWidget(text_edit_field)
         h_layout.addWidget(verify_icon_button)
         h_layout.addWidget(verify_button)
+
+        if folder_icon:
+            folder_icon_button = QPushButton()
+            folder_icon_button.setCursor(Qt.PointingHandCursor)
+            folder_icon_button.setMaximumWidth(40)
+            folder_icon_button.setStyleSheet("background:transparent;border: none;")
+            folder_icon_button.setIcon(self.folder_icon)
+            h_layout.addWidget(folder_icon_button)
+            return (
+                line_edit_field if lineEdit else text_edit_field,
+                verify_icon_button,
+                verify_button,
+                h_layout,
+                folder_icon_button,
+            )
         return (
             line_edit_field if lineEdit else text_edit_field,
             verify_icon_button,
