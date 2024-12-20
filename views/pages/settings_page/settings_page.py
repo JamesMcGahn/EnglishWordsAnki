@@ -3,6 +3,7 @@ import os
 from PySide6.QtCore import QRect, QSize, Qt, QThread, Signal, Slot
 from PySide6.QtGui import QColor, QFont, QIcon, QPainter
 from PySide6.QtWidgets import (
+    QApplication,
     QFileDialog,
     QHBoxLayout,
     QLabel,
@@ -17,8 +18,8 @@ from PySide6.QtWidgets import (
 )
 
 from base import QWidgetBase
-from core import AppleNoteImport
-from models import LogSettingsModel
+from core import AppleNoteImport, AudioThread, RemoveDuplicateAudio
+from models import LogSettingsModel, Status, WordModel
 from services.network import NetworkWorker
 from services.settings import AppSettings, SecureCredentials
 
@@ -105,6 +106,8 @@ class SettingsPage(QWidgetBase):
             self.google_api_key_hlayout,
         ) = self.create_input_fields("Google Service:", "Verify Google Service", False)
 
+        self.google_auth_api_key_paste_btn = QPushButton("Paste API Key")
+
         self.settings_page_layout.addLayout(self.apple_note_hlayout)
         self.settings_page_layout.addLayout(self.anki_words_deck_hlayout)
         self.settings_page_layout.addLayout(self.anki_model_deck_hlayout)
@@ -112,6 +115,8 @@ class SettingsPage(QWidgetBase):
         self.settings_page_layout.addLayout(self.anki_audio_path_hlayout)
         self.settings_page_layout.addLayout(self.log_file_path_hlayout)
         self.settings_page_layout.addLayout(self.google_api_key_hlayout)
+        self.settings_page_layout.addWidget(self.google_auth_api_key_paste_btn)
+
         self.settings_page_layout.addItem(vspacer)
 
         self.secure_creds = SecureCredentials()
@@ -125,6 +130,7 @@ class SettingsPage(QWidgetBase):
         self.label_anki_words_verify_btn.clicked.connect(self.verify_deck_name)
         self.label_anki_model_verify_btn.clicked.connect(self.verify_deck_model)
         self.label_anki_user_verify_btn.clicked.connect(self.verify_anki_user)
+        self.label_google_api_key_verify_btn.clicked.connect(self.verify_google_api_key)
         self.label_anki_audio_path_verify_btn.clicked.connect(
             lambda: self.open_folder_dialog("audio_path", self.lineEdit_anki_audio_path)
         )
@@ -172,15 +178,17 @@ class SettingsPage(QWidgetBase):
                 field, word, setting_type=field
             )
         )
-        self.textEdit_google_api_key.textChanged.connect(
-            lambda field="google_api": self.textEdit_change_secure_setting(
-                field, self.textEdit_google_api_key
-            )
-        )
+        self.textEdit_google_api_key.setReadOnly(True)
+        self.google_auth_api_key_paste_btn.clicked.connect(self.google_auth_paste_text)
+        # self.textEdit_google_api_key.textChanged.connect(
+        #     lambda field="google_api": self.textEdit_change_secure_setting(
+        #         field, self.textEdit_google_api_key
+        #     )
+        # )
 
     def textEdit_change_secure_setting(self, field, text_edit):
-        text = text_edit.toPlainText()
-        self.change_secure_setting(field, text, setting_type=field)
+        self.google_api_key = text_edit.toPlainText()
+        self.change_secure_setting(field, self.google_api_key, setting_type=field)
 
     def get_settings(self, setting="ALL", setText=False):
         self.settings.begin_group("settings")
@@ -236,12 +244,12 @@ class SettingsPage(QWidgetBase):
             )
 
         def google_api():
-            value = self.secure_creds.get_creds(
+            self.google_api_key = self.secure_creds.get_creds(
                 "english-dict-secure-settings", "google_api"
             )
             verified = self.settings.get_value("google_api-verified", False)
 
-            self.textEdit_google_api_key.setText(value)
+            self.textEdit_google_api_key.setText(self.google_api_key)
             self.label_google_api_key_verfied.setIcon(
                 self.check_icon if verified else self.x_icon
             )
@@ -365,6 +373,46 @@ class SettingsPage(QWidgetBase):
             lambda: self.label_anki_user_verify_btn.setDisabled(False),
             self.label_anki_user_verify_btn,
         )
+
+    def verify_google_api_key(self):
+        # self.start_define.setDisabled(True)
+        print(WordModel("", "", "test", "", "", "", "", ""))
+        self.audio_thread = AudioThread(
+            [WordModel("", "", "test", "", "", "", "", "")],
+            folder_path="./",
+            credential_string=self.google_api_key,
+        )
+
+        self.audio_thread.audio_word.connect(self.google_api_key_response)
+        self.audio_thread.error_word.connect(self.google_api_key_response)
+        self.audio_thread.finished.connect(self.audio_thread.deleteLater)
+
+        # self.audio_thread.finished.connect(self.reset_thread_reference)
+
+        self.audio_thread.start()
+
+    def google_api_key_response(self, response):
+        print()
+        success = response.status == Status.AUDIO
+        self.response_update(
+            [f"{self.google_api_key if success else False}"],
+            "google_api",
+            self.google_api_key,
+            self.label_anki_audio_path_verfied,
+            self.label_anki_audio_path_verify_btn,
+            self.anki_audio_verified,
+            "google_api",
+        )
+
+        if success:
+            paths = [response.audio_path]
+            self.removal_thread = QThread(self)
+            self.removal_worker = RemoveDuplicateAudio(paths)
+            self.removal_worker.moveToThread(self.removal_thread)
+            self.removal_thread.started.connect(self.removal_worker.do_work)
+            self.removal_thread.finished.connect(self.removal_worker.deleteLater)
+            self.removal_thread.finished.connect(self.removal_thread.deleteLater)
+            self.removal_thread.start()
 
     def change_setting(self, field, value, verified=False, setting_type="ALL"):
         print(field, value)
@@ -550,3 +598,10 @@ class SettingsPage(QWidgetBase):
             input_field.setText(folder)
             input_field.blockSignals(False)
             self.folder_submit.emit(key, folder)
+
+    def google_auth_paste_text(self):
+        """Handle pasting only."""
+        print("here")
+        clipboard = QApplication.clipboard()
+        self.textEdit_google_api_key.setText(clipboard.text())
+        self.textEdit_change_secure_setting("google_api", self.textEdit_google_api_key)
