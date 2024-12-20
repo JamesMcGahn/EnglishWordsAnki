@@ -14,9 +14,11 @@ class AudioThread(QThread):
     audio_word = Signal(WordModel)
     error_word = Signal(WordModel)
 
-    def __init__(self, words, folder_path=None):
+    def __init__(self, words, folder_path=None, access_key_location="", credential_string=""):
         super().__init__()
         self.folder_path = folder_path
+        self.access_key_location = access_key_location
+        self.credential_string = credential_string
         self.words = deque(words)
         self._mutex = QMutex()
         self._wait_condition = QWaitCondition()
@@ -34,6 +36,8 @@ class AudioThread(QThread):
                 word.word,
                 f"{word.word}",
                 self.folder_path,
+                self.access_key_location,
+                self.credential_string
             )
             self.worker.moveToThread(self)
             self.worker.success.connect(lambda path: self.success_download(path,word))
@@ -76,6 +80,8 @@ class AudioThread(QThread):
 
     def cleanup(self):
         if not self.words:
+            if self.worker:
+                self.worker.deleteLater()
             self.finished.emit()
         else:
             self.download_next_word()
