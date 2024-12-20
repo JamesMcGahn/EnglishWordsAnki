@@ -120,9 +120,9 @@ class LogSettingsModel(QObject, metaclass=QSingleton):
         If no settings are found, defaults are used. This method ensures that
         the log settings are loaded at startup.
         """
-        self.settings.begin_group("logs_settings")
+        self.settings.begin_group("settings")
         log_file_path = self.settings.get_value("log_file_path", "./logs/")
-        if log_file_path == '/':
+        if log_file_path == "/":
             log_file_path = "./logs/"
         self.log_file_path = log_file_path
         self.log_file_name = self.settings.get_value("log_file_name", "file.log")
