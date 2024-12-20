@@ -19,7 +19,7 @@ class SecureCredentials(QObjectBase, metaclass=QSingleton):
     """
 
     success = Signal()
-    error = Signal()
+    error = Signal(str)
 
     def __init__(self):
         """
