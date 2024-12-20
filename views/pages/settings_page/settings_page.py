@@ -3,6 +3,7 @@ import os
 from PySide6.QtCore import QRect, QSize, Qt, QThread, Signal, Slot
 from PySide6.QtGui import QColor, QFont, QIcon, QPainter
 from PySide6.QtWidgets import (
+    QFileDialog,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -17,16 +18,19 @@ from PySide6.QtWidgets import (
 
 from base import QWidgetBase
 from core import AppleNoteImport
+from models import LogSettingsModel
 from services.network import NetworkWorker
-from services.settings import AppSettings
+from services.settings import AppSettings, SecureCredentials
 
 
 class SettingsPage(QWidgetBase):
+    folder_submit = Signal(str, str)
 
     def __init__(self):
         super().__init__()
         self.settings_page_layout = QVBoxLayout(self)
         self.running_tasks = {}
+
         self.x_icon = QIcon()
         self.x_icon.addFile(
             ":/images/red_check.png",
@@ -77,10 +81,16 @@ class SettingsPage(QWidgetBase):
             self.anki_audio_path_hlayout,
         ) = self.create_input_fields("Anki Audio path:", "Verify Audio Path")
         (
-            self.textEdit_google_api_key_path,
-            self.label_google_api_key_path_verfied,
-            self.label_google_api_key_path_verify_btn,
-            self.google_api_key_path_hlayout,
+            self.lineEdit_log_file_path,
+            self.label_log_file_path_verfied,
+            self.label_log_file_path_verify_btn,
+            self.log_file_path_hlayout,
+        ) = self.create_input_fields("Log File path:", "Verify Log Path")
+        (
+            self.textEdit_google_api_key,
+            self.label_google_api_key_verfied,
+            self.label_google_api_key_verify_btn,
+            self.google_api_key_hlayout,
         ) = self.create_input_fields("Google Service:", "Verify Google Service", False)
 
         self.settings_page_layout.addLayout(self.apple_note_hlayout)
@@ -88,51 +98,66 @@ class SettingsPage(QWidgetBase):
         self.settings_page_layout.addLayout(self.anki_model_deck_hlayout)
         self.settings_page_layout.addLayout(self.anki_user_hlayout)
         self.settings_page_layout.addLayout(self.anki_audio_path_hlayout)
-        self.settings_page_layout.addLayout(self.google_api_key_path_hlayout)
+        self.settings_page_layout.addLayout(self.log_file_path_hlayout)
+        self.settings_page_layout.addLayout(self.google_api_key_hlayout)
         self.settings_page_layout.addItem(vspacer)
 
+        self.secure_creds = SecureCredentials()
         self.settings = AppSettings()
+        self.log_settings = LogSettingsModel()
         self.home_directory = os.path.expanduser("~")
         print("home", self.home_directory)
         self.get_settings("ALL", setText=True)
-
+        self.folder_submit.connect(self.folder_change)
         self.label_apple_note_verify_btn.clicked.connect(self.verify_apple_note_name)
         self.label_anki_words_verify_btn.clicked.connect(self.verify_deck_name)
         self.label_anki_model_verify_btn.clicked.connect(self.verify_deck_model)
         self.label_anki_user_verify_btn.clicked.connect(self.verify_anki_user)
         self.label_anki_audio_path_verify_btn.clicked.connect(
-            self.verify_anki_user_audio_path
+            lambda: self.verify_paths("audio", self.lineEdit_anki_audio_path)
+        )
+        self.label_log_file_path_verify_btn.clicked.connect(
+            lambda: self.verify_paths("log_file_path", self.lineEdit_log_file_path)
         )
         self.lineEdit_apple_note.textChanged.connect(
             lambda word, field="apple_note": self.change_setting(
-                field,
-                word,
+                field, word, setting_type=field
             )
         )
         self.lineEdit_anki_words_deck.textChanged.connect(
             lambda word, field="words": self.change_setting(
-                field,
-                word,
+                field, word, setting_type=field
             )
         )
         self.lineEdit_anki_model_deck.textChanged.connect(
             lambda word, field="model": self.change_setting(
-                field,
-                word,
+                field, word, setting_type=field
             )
         )
         self.lineEdit_anki_user.textChanged.connect(
             lambda word, field="user": self.change_setting(
-                field,
-                word,
+                field, word, setting_type=field
             )
         )
         self.lineEdit_anki_audio_path.textChanged.connect(
             lambda word, field="audio": self.change_setting(
-                field,
-                word,
+                field, word, setting_type=field
             )
         )
+        self.lineEdit_log_file_path.textChanged.connect(
+            lambda word, field="log_file_path": self.change_setting(
+                field, word, setting_type=field
+            )
+        )
+        self.textEdit_google_api_key.textChanged.connect(
+            lambda field="google_api": self.textEdit_change_secure_setting(
+                field, self.textEdit_google_api_key
+            )
+        )
+
+    def textEdit_change_secure_setting(self, field, text_edit):
+        text = text_edit.toPlainText()
+        self.change_secure_setting(field, text, setting_type=field)
 
     def get_settings(self, setting="ALL", setText=False):
         self.settings.begin_group("settings")
@@ -187,23 +212,53 @@ class SettingsPage(QWidgetBase):
                 setText,
             )
 
+        def google_api():
+            value = self.secure_creds.get_creds(
+                "english-dict-secure-settings", "google_api"
+            )
+            verified = self.settings.get_value("google_api-verified", False)
+
+            self.textEdit_google_api_key.setText(value)
+            self.label_google_api_key_verfied.setIcon(
+                self.check_icon if verified else self.x_icon
+            )
+            self.label_google_api_key_verify_btn.setDisabled(verified)
+
+        def log_file_path():
+            self.log_file_path, self.log_file_path_verified = self.get_and_set_settings(
+                "log_file_path",
+                "./logs/",
+                self.lineEdit_log_file_path,
+                self.label_log_file_path_verfied,
+                self.label_log_file_path_verify_btn,
+                setText,
+            )
+            # TODO connect to the logsettings saved signal to update logging
+
         match setting:
-            case "WORDS_DECK":
+            case "words":
                 words_deck()
-            case "MODEL_DECK":
+            case "model":
                 model_deck()
-            case "ANKI_USER":
+            case "user":
                 anki_user()
-            case "ANKI_AUDIO_PATH":
+            case "audio":
                 anki_audio_path()
-            case "APPLE_NOTE":
+            case "apple_note":
                 apple_note()
+            case "google_api":
+                google_api()
+            case "log_file_path":
+                log_file_path()
+
             case "ALL":
                 words_deck()
                 model_deck()
                 anki_user()
                 anki_audio_path()
                 apple_note()
+                google_api()
+                log_file_path()
         self.settings.end_group()
 
     def get_and_set_settings(
@@ -211,6 +266,7 @@ class SettingsPage(QWidgetBase):
     ):
         value = self.settings.get_value(key, default)
         verified = self.settings.get_value(f"{key}-verified", False)
+        print(key, value, verified)
         if setText:
             lineEdit.setText(value)
         verify_icon_btn.setIcon(self.check_icon if verified else self.x_icon)
@@ -295,6 +351,14 @@ class SettingsPage(QWidgetBase):
         self.settings.end_group()
         self.get_settings(setting_type, setText=False)
 
+    def change_secure_setting(self, field, value, verified=False, setting_type="ALL"):
+        print(field, value)
+        self.secure_creds.save_creds("english-dict-secure-settings", field, value)
+        self.settings.begin_group("settings")
+        self.settings.set_value(f"{field}-verified", verified)
+        self.settings.end_group()
+        self.get_settings(setting_type, setText=False)
+
     def response_update(
         self,
         response,
@@ -314,16 +378,39 @@ class SettingsPage(QWidgetBase):
             verify_btn.setDisabled(False)
             icon_label.setIcon(self.check_icon if model_verified else self.x_icon)
 
-    def verify_anki_user_audio_path(self):
-        isExist = os.path.exists(self.anki_audio)
+    def verify_paths(self, key, input_field):
+        self.open_folder_dialog(key, input_field)
+
+    @Slot(str, str)
+    def folder_change(self, key, folder):
+        if key == "log_file_path":
+            self.verify_log_file_path(folder)
+        elif key == "audio":
+            self.verify_anki_user_audio_path(folder)
+
+    def verify_anki_user_audio_path(self, folder):
+        isExist = os.path.exists(folder)
         self.response_update(
-            [f"{self.anki_audio if isExist else False}"],
+            [f"{folder if isExist else False}"],
             "audio",
-            self.anki_audio,
+            folder,
             self.label_anki_audio_path_verfied,
             self.label_anki_audio_path_verify_btn,
             self.anki_audio_verified,
-            "ANKI_AUDIO_PATH",
+            "audio",
+        )
+
+    def verify_log_file_path(self, folder):
+
+        isExist = os.path.exists(folder)
+        self.response_update(
+            [f"{folder if isExist else False}"],
+            "log_file_path",
+            folder,
+            self.label_log_file_path_verfied,
+            self.label_log_file_path_verify_btn,
+            self.log_file_path_verified,
+            "log_file_path",
         )
 
     def apple_note_response(self, response):
@@ -334,7 +421,7 @@ class SettingsPage(QWidgetBase):
             self.label_apple_note_verfied,
             self.label_apple_note_verify_btn,
             self.apple_note_verified,
-            "APPLE_NOTE",
+            "apple_note",
         )
 
     def deck_response(self, response):
@@ -347,7 +434,7 @@ class SettingsPage(QWidgetBase):
             self.label_anki_words_deck_verfied,
             self.label_anki_words_verify_btn,
             self.words_verified,
-            "WORDS_DECK",
+            "words",
         )
 
     def model_response(self, response):
@@ -360,7 +447,7 @@ class SettingsPage(QWidgetBase):
             self.label_anki_model_deck_verfied,
             self.label_anki_model_verify_btn,
             self.model_verified,
-            "MODEL_DECK",
+            "model",
         )
 
     def user_response(self, response):
@@ -373,7 +460,7 @@ class SettingsPage(QWidgetBase):
             self.label_anki_user_verfied,
             self.label_anki_user_verify_btn,
             self.anki_user_verified,
-            "ANKI_USER",
+            "user",
         )
 
     def create_input_fields(self, label_text, verify_button_text, lineEdit=True):
@@ -389,8 +476,6 @@ class SettingsPage(QWidgetBase):
         h_layout.setSpacing(10)
         h_layout.addWidget(label)
 
-        h_layout.addWidget(verify_icon_button)
-
         if lineEdit:
             line_edit_field = QLineEdit()
             line_edit_field.setMaximumWidth(230)
@@ -399,7 +484,7 @@ class SettingsPage(QWidgetBase):
             text_edit_field = QTextEdit()
             text_edit_field.setMaximumWidth(230)
             h_layout.addWidget(text_edit_field)
-
+        h_layout.addWidget(verify_icon_button)
         h_layout.addWidget(verify_button)
         return (
             line_edit_field if lineEdit else text_edit_field,
@@ -407,3 +492,22 @@ class SettingsPage(QWidgetBase):
             verify_button,
             h_layout,
         )
+
+    def open_folder_dialog(self, key, input_field) -> None:
+        """
+        Opens a dialog for the user to select a folder for storing log files.
+        Once a folder is selected, the path is updated in the corresponding input field.
+
+        Returns:
+            None: This function does not return a value.
+        """
+
+        path = input_field.text() or "./"
+
+        folder = QFileDialog.getExistingDirectory(self, "Select Folder", dir=path)
+
+        if folder:
+            input_field.blockSignals(True)
+            input_field.setText(folder)
+            input_field.blockSignals(False)
+            self.folder_submit.emit(key, folder)
