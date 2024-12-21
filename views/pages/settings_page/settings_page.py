@@ -30,8 +30,14 @@ class SettingsPage(QWidgetBase):
 
     def __init__(self):
         super().__init__()
-        self.settings_page_layout = QVBoxLayout(self)
+        self.settings_page_layout = QHBoxLayout(self)
+        self.inner_settings_page_layout = QHBoxLayout()
+        self.settings_page_layout.addLayout(self.inner_settings_page_layout)
+        vspacer = QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.settings_page_layout.addItem(vspacer)
         self.running_tasks = {}
+        self.settings = AppSettings()
+        self.log_settings = LogSettingsModel()
 
         self.x_icon = QIcon()
         self.x_icon.addFile(
@@ -52,12 +58,14 @@ class SettingsPage(QWidgetBase):
             QIcon.Mode.Normal,
         )
 
-        hspacer = QSpacerItem(400, 1, QSizePolicy.Expanding, QSizePolicy.Minimum)
-        vspacer = QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        hspacer = QSpacerItem(1, 1, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        self.settings_page_layout.addItem(hspacer)
+
         # self.settings_page_layout.addItem(hspacer)
         self.settings_grid_layout = QGridLayout()
         self.columns = 4
         self.settings_page_layout.addLayout(self.settings_grid_layout)
+        self.settings_page_layout.addItem(hspacer)
         (
             self.lineEdit_apple_note,
             self.label_apple_note_verfied,
@@ -103,19 +111,27 @@ class SettingsPage(QWidgetBase):
             "Log File path:", "Verify Log Path", folder_icon=True
         )
         (
+            self.lineEdit_log_file_name,
+            self.label_log_file_name_verfied,
+            self.label_log_file_name_verify_btn,
+            self.log_file_name_hlayout,
+        ) = self.create_input_fields("Log File Name:", "Save Log File Name")
+        (
             self.textEdit_google_api_key,
             self.label_google_api_key_verfied,
             self.label_google_api_key_verify_btn,
             self.google_api_key_vlayout,
         ) = self.create_input_fields("Google Service:", "Verify Google Service", False)
 
+        self.settings_grid_layout.addItem(
+            vspacer, self.settings_grid_layout.count() // self.columns, 2
+        )
         self.google_auth_api_key_paste_btn = QPushButton("Paste API Key")
         self.google_api_key_vlayout.addWidget(self.google_auth_api_key_paste_btn)
         self.settings_page_layout.addItem(vspacer)
 
         self.secure_creds = SecureCredentials()
-        self.settings = AppSettings()
-        self.log_settings = LogSettingsModel()
+
         self.home_directory = os.path.expanduser("~")
         print("home", self.home_directory)
         self.get_settings("ALL", setText=True)
@@ -125,6 +141,7 @@ class SettingsPage(QWidgetBase):
         self.label_anki_model_verify_btn.clicked.connect(self.verify_deck_model)
         self.label_anki_user_verify_btn.clicked.connect(self.verify_anki_user)
         self.label_google_api_key_verify_btn.clicked.connect(self.verify_google_api_key)
+        self.label_log_file_name_verify_btn.clicked.connect(self.verify_log_file_name)
         self.label_anki_audio_path_verify_btn.clicked.connect(
             lambda: self.open_folder_dialog("audio_path", self.lineEdit_anki_audio_path)
         )
@@ -169,6 +186,11 @@ class SettingsPage(QWidgetBase):
         )
         self.lineEdit_log_file_path.textChanged.connect(
             lambda word, field="log_file_path": self.change_setting(
+                field, word, setting_type=field
+            )
+        )
+        self.lineEdit_log_file_name.textChanged.connect(
+            lambda word, field="log_file_name": self.change_setting(
                 field, word, setting_type=field
             )
         )
@@ -260,6 +282,18 @@ class SettingsPage(QWidgetBase):
             )
             # TODO connect to the logsettings saved signal to update logging
 
+        def log_file_name():
+            self.log_file_name, self.log_file_name_verified = self.get_and_set_settings(
+                "log_file_name",
+                "file.log",
+                self.lineEdit_log_file_name,
+                self.label_log_file_name_verfied,
+                self.label_log_file_name_verify_btn,
+                setText,
+            )
+
+        # TODO connect to the logsettings saved signal to update logging
+
         match setting:
             case "words":
                 words_deck()
@@ -275,6 +309,9 @@ class SettingsPage(QWidgetBase):
                 google_api()
             case "log_file_path":
                 log_file_path()
+            case "log_file_name":
+                log_file_name()
+                pass
 
             case "ALL":
                 words_deck()
@@ -284,6 +321,7 @@ class SettingsPage(QWidgetBase):
                 apple_note()
                 google_api()
                 log_file_path()
+                log_file_name()
         self.settings.end_group()
 
     def get_and_set_settings(
@@ -475,6 +513,17 @@ class SettingsPage(QWidgetBase):
             "log_file_path",
         )
 
+    def verify_log_file_name(self):
+        self.response_update(
+            [self.log_file_name],
+            "log_file_name",
+            self.log_file_name,
+            self.label_log_file_name_verfied,
+            self.label_log_file_name_verify_btn,
+            self.log_file_name_verified,
+            "log_file_name",
+        )
+
     def apple_note_response(self, response):
         self.response_update(
             [f"{self.apple_note if response else False}"],
@@ -531,8 +580,10 @@ class SettingsPage(QWidgetBase):
         last_row = self.settings_grid_layout.count() // self.columns
         h_layout = QHBoxLayout()
         h_layout.setAlignment(Qt.AlignLeft)
+
         label = QLabel(label_text)
         label.setMinimumWidth(143)
+        label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Preferred)
 
         verify_icon_button = QPushButton()
         verify_icon_button.setMaximumWidth(40)
@@ -540,36 +591,38 @@ class SettingsPage(QWidgetBase):
         verify_button = QPushButton(verify_button_text)
         verify_button.setCursor(Qt.PointingHandCursor)
 
-        self.settings_grid_layout.addWidget(label, last_row, 0)
+        self.settings_grid_layout.addWidget(label, last_row, 0, Qt.AlignTop)
 
         if folder_icon:
             folder_icon_button = QPushButton()
+            folder_icon_button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Preferred)
             folder_icon_button.setStyleSheet(
                 "background:transparent;border: none; margin: 0px; padding: 0px;"
             )
 
             folder_icon_button.setCursor(Qt.PointingHandCursor)
-            folder_icon_button.setMaximumWidth(40)
 
             folder_icon_button.setIcon(self.folder_icon)
 
         if lineEdit:
             line_edit_field = QLineEdit()
-            line_edit_field.setMaximumWidth(230)
+
             h_layout.addWidget(line_edit_field)
             if folder_icon:
                 h_layout.addWidget(folder_icon_button)
-            self.settings_grid_layout.addLayout(h_layout, last_row, 1, Qt.AlignLeft)
+            self.settings_grid_layout.addLayout(h_layout, last_row, 1, Qt.AlignTop)
         else:
+
             h_layout = QVBoxLayout()
-
             text_edit_field = QTextEdit()
-            text_edit_field.setMaximumWidth(230)
-            h_layout.addWidget(text_edit_field)
-            self.settings_grid_layout.addLayout(h_layout, last_row, 1, Qt.AlignLeft)
 
-        self.settings_grid_layout.addWidget(verify_icon_button, last_row, 2)
-        self.settings_grid_layout.addWidget(verify_button, last_row, 3)
+            h_layout.addWidget(text_edit_field)
+            self.settings_grid_layout.addLayout(h_layout, last_row, 1, Qt.AlignTop)
+
+        self.settings_grid_layout.addWidget(
+            verify_icon_button, last_row, 2, Qt.AlignTop
+        )
+        self.settings_grid_layout.addWidget(verify_button, last_row, 3, Qt.AlignTop)
 
         if folder_icon:
             return (
