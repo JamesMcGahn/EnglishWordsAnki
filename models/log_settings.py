@@ -120,16 +120,39 @@ class LogSettingsModel(QObject, metaclass=QSingleton):
         If no settings are found, defaults are used. This method ensures that
         the log settings are loaded at startup.
         """
+        default_log_file_path = "./logs/"
+        default_log_file_name = "file.log"
+        default_backup_count = 5
+        default_file_max_mbs = 5
+        default_keep_files_days = 30
+        default_turn_off_print = False
+
+        settings = [
+            ("log_file_path", self.log_file_path, default_log_file_path),
+            ("log_file_name", self.log_file_name, default_log_file_name),
+            ("log_backup_count", self.log_backup_count, default_backup_count),
+            ("log_file_max_mbs", self.log_file_max_mbs, default_file_max_mbs),
+            ("log_keep_files_days", self.log_keep_files_days, default_keep_files_days),
+            ("log_turn_off_print", self.log_turn_off_print, default_turn_off_print),
+        ]
         self.settings.begin_group("settings")
-        log_file_path = self.settings.get_value("log_file_path", "./logs/")
-        if log_file_path == "/":
-            log_file_path = "./logs/"
-        self.log_file_path = log_file_path
-        self.log_file_name = self.settings.get_value("log_file_name", "file.log")
-        self.log_backup_count = self.settings.get_value("log_backup_count", 5)
-        self.log_file_max_mbs = self.settings.get_value("log_file_max_mbs", 5)
-        self.log_keep_files_days = self.settings.get_value("log_keep_files_days", 30)
-        self.log_turn_off_print = self.settings.get_value(
-            "log_turn_off_print", False, bool
-        )
+        for setting in settings:
+            key, self_setting, default = setting
+            verified = self.settings.get_value(f"{key}-verified", False)
+            # trunk-ignore(ruff/F841)
+            self_setting = (
+                self.settings.get_value(key, default) if verified else default
+            )
         self.settings.end_group()
+        self.log_file_path = (
+            "./logs/" if self.log_file_path == "/" else self.log_file_path
+        )
+        self.log_turn_off_print = bool(self.log_turn_off_print)
+        print(
+            ("log_file_path", self.log_file_path, default_log_file_path),
+            ("log_file_name", self.log_file_name, default_log_file_name),
+            ("log_backup_count", self.log_backup_count, default_backup_count),
+            ("log_file_max_mbs", self.log_file_max_mbs, default_file_max_mbs),
+            ("log_keep_files_days", self.log_keep_files_days, default_keep_files_days),
+            ("log_turn_off_print", self.log_turn_off_print, default_turn_off_print),
+        )
