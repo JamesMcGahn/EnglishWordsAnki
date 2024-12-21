@@ -5,6 +5,7 @@ from PySide6.QtGui import QColor, QFont, QIcon, QPainter
 from PySide6.QtWidgets import (
     QApplication,
     QFileDialog,
+    QGridLayout,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -54,7 +55,9 @@ class SettingsPage(QWidgetBase):
         hspacer = QSpacerItem(400, 1, QSizePolicy.Expanding, QSizePolicy.Minimum)
         vspacer = QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Expanding)
         # self.settings_page_layout.addItem(hspacer)
-
+        self.settings_grid_layout = QGridLayout()
+        self.columns = 4
+        self.settings_page_layout.addLayout(self.settings_grid_layout)
         (
             self.lineEdit_apple_note,
             self.label_apple_note_verfied,
@@ -103,20 +106,11 @@ class SettingsPage(QWidgetBase):
             self.textEdit_google_api_key,
             self.label_google_api_key_verfied,
             self.label_google_api_key_verify_btn,
-            self.google_api_key_hlayout,
+            self.google_api_key_vlayout,
         ) = self.create_input_fields("Google Service:", "Verify Google Service", False)
 
         self.google_auth_api_key_paste_btn = QPushButton("Paste API Key")
-
-        self.settings_page_layout.addLayout(self.apple_note_hlayout)
-        self.settings_page_layout.addLayout(self.anki_words_deck_hlayout)
-        self.settings_page_layout.addLayout(self.anki_model_deck_hlayout)
-        self.settings_page_layout.addLayout(self.anki_user_hlayout)
-        self.settings_page_layout.addLayout(self.anki_audio_path_hlayout)
-        self.settings_page_layout.addLayout(self.log_file_path_hlayout)
-        self.settings_page_layout.addLayout(self.google_api_key_hlayout)
-        self.settings_page_layout.addWidget(self.google_auth_api_key_paste_btn)
-
+        self.google_api_key_vlayout.addWidget(self.google_auth_api_key_paste_btn)
         self.settings_page_layout.addItem(vspacer)
 
         self.secure_creds = SecureCredentials()
@@ -146,7 +140,7 @@ class SettingsPage(QWidgetBase):
             )
         )
         self.anki_audio_path_folder_btn.clicked.connect(
-            lambda: self.open_folder_dialog("audio_path", self.lineEdit_log_file_path)
+            lambda: self.open_folder_dialog("audio_path", self.lineEdit_anki_audio_path)
         )
         self.lineEdit_apple_note.textChanged.connect(
             lambda word, field="apple_note": self.change_setting(
@@ -534,6 +528,7 @@ class SettingsPage(QWidgetBase):
     def create_input_fields(
         self, label_text, verify_button_text, lineEdit=True, folder_icon=False
     ):
+        last_row = self.settings_grid_layout.count() // self.columns
         h_layout = QHBoxLayout()
         h_layout.setAlignment(Qt.AlignLeft)
         label = QLabel(label_text)
@@ -545,27 +540,38 @@ class SettingsPage(QWidgetBase):
         verify_button = QPushButton(verify_button_text)
         verify_button.setCursor(Qt.PointingHandCursor)
 
-        h_layout.setSpacing(10)
-        h_layout.addWidget(label)
+        self.settings_grid_layout.addWidget(label, last_row, 0)
+
+        if folder_icon:
+            folder_icon_button = QPushButton()
+            folder_icon_button.setStyleSheet(
+                "background:transparent;border: none; margin: 0px; padding: 0px;"
+            )
+
+            folder_icon_button.setCursor(Qt.PointingHandCursor)
+            folder_icon_button.setMaximumWidth(40)
+
+            folder_icon_button.setIcon(self.folder_icon)
 
         if lineEdit:
             line_edit_field = QLineEdit()
             line_edit_field.setMaximumWidth(230)
             h_layout.addWidget(line_edit_field)
+            if folder_icon:
+                h_layout.addWidget(folder_icon_button)
+            self.settings_grid_layout.addLayout(h_layout, last_row, 1, Qt.AlignLeft)
         else:
+            h_layout = QVBoxLayout()
+
             text_edit_field = QTextEdit()
             text_edit_field.setMaximumWidth(230)
             h_layout.addWidget(text_edit_field)
-        h_layout.addWidget(verify_icon_button)
-        h_layout.addWidget(verify_button)
+            self.settings_grid_layout.addLayout(h_layout, last_row, 1, Qt.AlignLeft)
+
+        self.settings_grid_layout.addWidget(verify_icon_button, last_row, 2)
+        self.settings_grid_layout.addWidget(verify_button, last_row, 3)
 
         if folder_icon:
-            folder_icon_button = QPushButton()
-            folder_icon_button.setCursor(Qt.PointingHandCursor)
-            folder_icon_button.setMaximumWidth(40)
-            folder_icon_button.setStyleSheet("background:transparent;border: none;")
-            folder_icon_button.setIcon(self.folder_icon)
-            h_layout.addWidget(folder_icon_button)
             return (
                 line_edit_field if lineEdit else text_edit_field,
                 verify_icon_button,
@@ -594,6 +600,7 @@ class SettingsPage(QWidgetBase):
         folder = QFileDialog.getExistingDirectory(self, "Select Folder", dir=path)
 
         if folder:
+            folder = folder if folder[-1] == "/" else folder + "/"
             input_field.blockSignals(True)
             input_field.setText(folder)
             input_field.blockSignals(False)
