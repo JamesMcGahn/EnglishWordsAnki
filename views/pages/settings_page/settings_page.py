@@ -117,6 +117,24 @@ class SettingsPage(QWidgetBase):
             self.log_file_name_hlayout,
         ) = self.create_input_fields("Log File Name:", "Save Log File Name")
         (
+            self.lineEdit_log_backup_count,
+            self.label_log_backup_count_verfied,
+            self.label_log_backup_count_verify_btn,
+            self.log_backup_count_hlayout,
+        ) = self.create_input_fields("Log Backup Count:", "Save Log Backup Count")
+        (
+            self.lineEdit_log_file_max_mbs,
+            self.label_log_file_max_mbs_verfied,
+            self.label_log_file_max_mbs_verify_btn,
+            self.log_file_max_mbs_hlayout,
+        ) = self.create_input_fields("Log File Max Mbs:", "Save Log File Max Mbs")
+        (
+            self.lineEdit_log_keep_files_days,
+            self.label_log_keep_files_days_verfied,
+            self.label_log_keep_files_days_verify_btn,
+            self.log_keep_files_days_hlayout,
+        ) = self.create_input_fields("Keep Log File Days:", "Save Log File Days")
+        (
             self.textEdit_google_api_key,
             self.label_google_api_key_verfied,
             self.label_google_api_key_verify_btn,
@@ -142,6 +160,15 @@ class SettingsPage(QWidgetBase):
         self.label_anki_user_verify_btn.clicked.connect(self.verify_anki_user)
         self.label_google_api_key_verify_btn.clicked.connect(self.verify_google_api_key)
         self.label_log_file_name_verify_btn.clicked.connect(self.verify_log_file_name)
+        self.label_log_backup_count_verify_btn.clicked.connect(
+            self.verify_log_backup_count
+        )
+        self.label_log_file_max_mbs_verify_btn.clicked.connect(
+            self.verify_log_file_max_mbs
+        )
+        self.label_log_keep_files_days_verify_btn.clicked.connect(
+            self.verify_log_keep_files_days
+        )
         self.label_anki_audio_path_verify_btn.clicked.connect(
             lambda: self.open_folder_dialog("audio_path", self.lineEdit_anki_audio_path)
         )
@@ -192,6 +219,21 @@ class SettingsPage(QWidgetBase):
         self.lineEdit_log_file_name.textChanged.connect(
             lambda word, field="log_file_name": self.change_setting(
                 field, word, setting_type=field
+            )
+        )
+        self.lineEdit_log_backup_count.textChanged.connect(
+            lambda word, field="log_backup_count": self.change_setting(
+                field, word, setting_type=field, type="int"
+            )
+        )
+        self.lineEdit_log_file_max_mbs.textChanged.connect(
+            lambda word, field="log_file_max_mbs": self.change_setting(
+                field, word, setting_type=field, type="int"
+            )
+        )
+        self.lineEdit_log_keep_files_days.textChanged.connect(
+            lambda word, field="log_keep_files_days": self.change_setting(
+                field, word, setting_type=field, type="int"
             )
         )
         self.textEdit_google_api_key.setReadOnly(True)
@@ -292,6 +334,45 @@ class SettingsPage(QWidgetBase):
                 setText,
             )
 
+        def log_backup_count():
+            self.log_backup_count, self.log_backup_count_verified = (
+                self.get_and_set_settings(
+                    "log_backup_count",
+                    5,
+                    self.lineEdit_log_backup_count,
+                    self.label_log_backup_count_verfied,
+                    self.label_log_backup_count_verify_btn,
+                    setText,
+                    "int",
+                )
+            )
+
+        def log_file_max_mbs():
+            self.log_file_max_mbs, self.log_file_max_mbs_verified = (
+                self.get_and_set_settings(
+                    "log_file_max_mbs",
+                    5,
+                    self.lineEdit_log_file_max_mbs,
+                    self.label_log_file_max_mbs_verfied,
+                    self.label_log_file_max_mbs_verify_btn,
+                    setText,
+                    "int",
+                )
+            )
+
+        def log_keep_files_days():
+            self.log_keep_files_days, self.log_keep_files_days_verified = (
+                self.get_and_set_settings(
+                    "log_keep_files_days",
+                    5,
+                    self.lineEdit_log_keep_files_days,
+                    self.label_log_keep_files_days_verfied,
+                    self.label_log_keep_files_days_verify_btn,
+                    setText,
+                    "int",
+                )
+            )
+
         # TODO connect to the logsettings saved signal to update logging
 
         match setting:
@@ -311,7 +392,12 @@ class SettingsPage(QWidgetBase):
                 log_file_path()
             case "log_file_name":
                 log_file_name()
-                pass
+            case "log_backup_count":
+                log_backup_count()
+            case "log_file_max_mbs":
+                log_file_max_mbs()
+            case "log_keep_files_days":
+                log_keep_files_days()
 
             case "ALL":
                 words_deck()
@@ -322,14 +408,26 @@ class SettingsPage(QWidgetBase):
                 google_api()
                 log_file_path()
                 log_file_name()
+                log_backup_count()
+                log_file_max_mbs()
+                log_keep_files_days()
         self.settings.end_group()
 
     def get_and_set_settings(
-        self, key, default, lineEdit, verify_icon_btn, verify_btn, setText=False
+        self,
+        key,
+        default,
+        lineEdit,
+        verify_icon_btn,
+        verify_btn,
+        setText=False,
+        type="str",
     ):
         value = self.settings.get_value(key, default)
         verified = self.settings.get_value(f"{key}-verified", False)
         print(key, value, verified)
+        if type == "int":
+            value = str(value)
         if setText:
             lineEdit.setText(value)
         verify_icon_btn.setIcon(self.check_icon if verified else self.x_icon)
@@ -446,9 +544,14 @@ class SettingsPage(QWidgetBase):
             self.removal_thread.finished.connect(self.removal_thread.deleteLater)
             self.removal_thread.start()
 
-    def change_setting(self, field, value, verified=False, setting_type="ALL"):
+    def change_setting(
+        self, field, value, verified=False, setting_type="ALL", type="str"
+    ):
         print(field, value)
         self.settings.begin_group("settings")
+        if type == "int":
+
+            value = int(value if value else 0)
         self.settings.set_value(field, value)
         self.settings.set_value(f"{field}-verified", verified)
         self.settings.end_group()
@@ -471,9 +574,10 @@ class SettingsPage(QWidgetBase):
         verify_btn,
         model_verified,
         setting_type="ALL",
+        type="str",
     ):
         if value in response:
-            self.change_setting(key, value, True, setting_type)
+            self.change_setting(key, value, True, setting_type, type)
             icon_label.setIcon(self.check_icon)
             verify_btn.setDisabled(True)
             model_verified = True
@@ -522,6 +626,42 @@ class SettingsPage(QWidgetBase):
             self.label_log_file_name_verify_btn,
             self.log_file_name_verified,
             "log_file_name",
+        )
+
+    def verify_log_backup_count(self):
+        self.response_update(
+            [self.log_backup_count],
+            "log_backup_count",
+            self.log_backup_count,
+            self.label_log_backup_count_verfied,
+            self.label_log_backup_count_verify_btn,
+            self.log_backup_count_verified,
+            "log_backup_count",
+            "int",
+        )
+
+    def verify_log_file_max_mbs(self):
+        self.response_update(
+            [self.log_file_max_mbs],
+            "log_file_max_mbs",
+            self.log_file_max_mbs,
+            self.label_log_file_max_mbs_verfied,
+            self.label_log_file_max_mbs_verify_btn,
+            self.log_file_max_mbs_verified,
+            "log_file_max_mbs",
+            "int",
+        )
+
+    def verify_log_keep_files_days(self):
+        self.response_update(
+            [self.log_keep_files_days],
+            "log_keep_files_days",
+            self.log_keep_files_days,
+            self.label_log_keep_files_days_verfied,
+            self.label_log_keep_files_days_verify_btn,
+            self.log_keep_files_days_verified,
+            "log_keep_files_days",
+            "int",
         )
 
     def apple_note_response(self, response):
