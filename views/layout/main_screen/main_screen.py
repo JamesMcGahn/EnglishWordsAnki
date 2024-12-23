@@ -22,6 +22,7 @@ class MainScreen(QWidgetBase):
 
     close_main_window = Signal()
     page_changed = Signal(int)
+    send_app_settings = Signal()
 
     def __init__(self):
         """
@@ -46,10 +47,17 @@ class MainScreen(QWidgetBase):
         self.ui.audio_page.start_sync_for_words.connect(
             self.ui.sync_page.start_sync_words
         )
+
+        self.ui.settings_page.import_page_settings.connect(
+            self.ui.import_page.receive_settings_update
+        )
+
         self.appshutdown.connect(self.ui.import_page.notified_app_shutting)
         self.appshutdown.connect(self.ui.define_page.notified_app_shutting)
         self.appshutdown.connect(self.ui.audio_page.notified_app_shutting)
         self.appshutdown.connect(self.ui.sync_page.notified_app_shutting)
+        self.send_app_settings.connect(self.ui.settings_page.send_all_settings)
+        self.send_app_settings.emit()
 
     def int_change_page(self, index):
         print(index)

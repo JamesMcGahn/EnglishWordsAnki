@@ -27,6 +27,7 @@ from services.settings import AppSettings, SecureCredentials
 
 class SettingsPage(QWidgetBase):
     folder_submit = Signal(str, str)
+    import_page_settings = Signal(str)
 
     def __init__(self):
         super().__init__()
@@ -153,6 +154,7 @@ class SettingsPage(QWidgetBase):
         self.home_directory = os.path.expanduser("~")
         print("home", self.home_directory)
         self.get_settings("ALL", setText=True)
+
         self.folder_submit.connect(self.folder_change)
         self.label_apple_note_verify_btn.clicked.connect(self.verify_apple_note_name)
         self.label_anki_words_verify_btn.clicked.connect(self.verify_deck_name)
@@ -294,7 +296,7 @@ class SettingsPage(QWidgetBase):
         def apple_note():
             self.apple_note, self.apple_note_verified = self.get_and_set_settings(
                 "apple_note",
-                f"{self.home_directory}/Library/Application Support/Anki2/{self.anki_user}/collection.media",
+                "",
                 self.lineEdit_apple_note,
                 self.label_apple_note_verfied,
                 self.label_apple_note_verify_btn,
@@ -581,6 +583,7 @@ class SettingsPage(QWidgetBase):
             icon_label.setIcon(self.check_icon)
             verify_btn.setDisabled(True)
             model_verified = True
+            self.send_settings_update(key)
         else:
             verify_btn.setDisabled(False)
             icon_label.setIcon(self.check_icon if model_verified else self.x_icon)
@@ -805,3 +808,17 @@ class SettingsPage(QWidgetBase):
         clipboard = QApplication.clipboard()
         self.textEdit_google_api_key.setText(clipboard.text())
         self.textEdit_change_secure_setting("google_api", self.textEdit_google_api_key)
+
+    def send_settings_update(self, key):
+
+        # Import Page settings
+        if key in ["apple_note"]:
+            self.send_import_page_settings()
+
+    def send_import_page_settings(self):
+        self.import_page_settings.emit(self.apple_note)
+
+    @Slot()
+    def send_all_settings(self):
+        print("send all settings")
+        self.send_import_page_settings()

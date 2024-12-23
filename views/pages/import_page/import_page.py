@@ -27,6 +27,8 @@ class ImportPage(QWidgetBase):
         word_set_layout = QVBoxLayout(self)
         h_layout = QHBoxLayout()
 
+        self.apple_note_name = None
+
         self.arrow_up = QPushButton("")
         self.arrow_down = QPushButton("")
         self.arrow_down.setCursor(Qt.PointingHandCursor)
@@ -131,8 +133,17 @@ class ImportPage(QWidgetBase):
             self.list_widget.setCurrentRow(0)
 
     def import_words_from_apple_notes(self):
+        if not self.apple_note_name:
+            self.log_with_toast(
+                "Apple Note Name Not Set",
+                "Please enter the Apple note name on the Settings page.",
+                "WARN",
+                "WARN",
+                parent=self,
+            )
+            return
         self.appleNoteThread = QThread()
-        self.appleImport = AppleNoteImport("Words")
+        self.appleImport = AppleNoteImport(self.apple_note_name)
         self.appleImport.moveToThread(self.appleNoteThread)
         self.appleImport.result.connect(self.receive_words)
         self.appleImport.finished.connect(self.appleImport.deleteLater)
@@ -157,3 +168,8 @@ class ImportPage(QWidgetBase):
             self.list_widget.takeItem(self.list_widget.row(word))
         self.save_words_to_model.emit()
         self.start_defining_words.emit(1)
+
+    @Slot(str)
+    def receive_settings_update(self, apple_note):
+        print("import page", apple_note)
+        self.apple_note_name = apple_note
