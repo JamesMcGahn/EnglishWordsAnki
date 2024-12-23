@@ -26,6 +26,8 @@ class AudioPage(QWidgetBase):
         word_set_layout = QVBoxLayout(self)
 
         self.audio_thread = None
+        self.anki_audio_path = None
+        self.google_api_key_string = None
 
         # List Widget
         define_queue_qv = QVBoxLayout()
@@ -144,9 +146,31 @@ class AudioPage(QWidgetBase):
     def start_audio_words(self):
         if self.audio_thread and self.audio_thread.isRunning():
             return
+        elif not self.google_api_key_string:
+            self.log_with_toast(
+                "Google API Key String Not Set",
+                "Please enter the Google API Key on the Settings page.",
+                "WARN",
+                "WARN",
+                parent=self,
+            )
+            return
+        elif not self.anki_audio_path:
+            self.log_with_toast(
+                "Google API Key String Not Set",
+                "Please enter the Google API Key on the Settings page.",
+                "WARN",
+                "WARN",
+                parent=self,
+            )
+            return
         else:
             self.start_define.setDisabled(True)
-            self.audio_thread = AudioThread(self.wordsModel.to_be_audio_words, "./")
+            self.audio_thread = AudioThread(
+                self.wordsModel.to_be_audio_words,
+                folder_path=self.anki_audio_path,
+                credential_string=self.google_api_key_string,
+            )
 
             self.audio_thread.audio_word.connect(self.receive_audio_word)
             self.audio_thread.error_word.connect(self.receive_error_word)
@@ -197,3 +221,9 @@ class AudioPage(QWidgetBase):
             )
         self.save_words_to_model.emit()
         self.start_sync_for_words.emit(3)
+
+    @Slot(str, str)
+    def receive_settings_update(self, google_api_key_string, anki_audio_path):
+        print("audio page", google_api_key_string, anki_audio_path)
+        self.google_api_key_string = google_api_key_string
+        self.anki_audio_path = anki_audio_path

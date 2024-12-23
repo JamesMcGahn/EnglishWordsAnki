@@ -28,6 +28,7 @@ from services.settings import AppSettings, SecureCredentials
 class SettingsPage(QWidgetBase):
     folder_submit = Signal(str, str)
     import_page_settings = Signal(str)
+    audio_page_settings = Signal(str, str)
 
     def __init__(self):
         super().__init__()
@@ -814,11 +815,17 @@ class SettingsPage(QWidgetBase):
         # Import Page settings
         if key in ["apple_note"]:
             self.send_import_page_settings()
+        if key in ["audio_path", "google_api"]:
+            self.send_audio_page_settings()
 
     def send_import_page_settings(self):
         self.import_page_settings.emit(self.apple_note)
+
+    def send_audio_page_settings(self):
+        self.audio_page_settings.emit(self.google_api_key, self.anki_audio)
 
     @Slot()
     def send_all_settings(self):
         print("send all settings")
         self.send_import_page_settings()
+        self.send_audio_page_settings()
