@@ -79,4 +79,6 @@ class QWidgetBase(QWidget):
             None
         """
         self.logging(msg, log_level, print_msg)
+        if not parent:
+            parent = self
         QToast(parent, toast_level, toast_title, msg)

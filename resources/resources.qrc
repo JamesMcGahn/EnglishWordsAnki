@@ -25,5 +25,10 @@
     <file>images/define_black.png</file>
     <file>images/green_check.png</file>
     <file>images/red_check.png</file>
+    <file>images/warning.png</file>
+    <file>images/success.png</file>
+    <file>images/information.png</file>
+    <file>images/error.png</file>
+    <file>images/close.png</file>
   </qresource>
 </RCC>

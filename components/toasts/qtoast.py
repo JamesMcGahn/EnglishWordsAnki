@@ -5,7 +5,7 @@ from .pyqttoast import Toast, ToastPosition, ToastPreset
 
 class QToast(Toast):
     def __init__(self, parent, status, title, message):
-        super().__init__()
+        super().__init__(parent)
         self.setDuration(5000)
         self.message = message
         self.title = title
@@ -33,9 +33,9 @@ class QToast(Toast):
         self.setTitleColor(QColor("#FFFFFF"))
         self.setBackgroundColor(QColor("#003366"))
         self.setDurationBarColor(QColor("#00A8E8"))
-        self.setIconSeparatorColor(QColor("#00A8E8"))
-        self.setIconColor(QColor("#00A8E8"))
-        self.setCloseButtonIconColor(QColor("#00A8E8"))
+        self.setIconSeparatorColor(QColor("#ffffff"))
+        self.setIconColor(QColor("#ffffff"))
+        self.setCloseButtonIconColor(QColor("#ffffff"))
         self.setMinimumWidth(300)
         self.setMaximumWidth(350)
         self.setMinimumHeight(55)
