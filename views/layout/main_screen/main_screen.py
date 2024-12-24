@@ -58,6 +58,10 @@ class MainScreen(QWidgetBase):
             self.ui.sync_page.receive_settings_update
         )
 
+        self.ui.settings_page.log_page_settings.connect(
+            self.ui.logs_page.receive_settings_update
+        )
+
         self.appshutdown.connect(self.ui.import_page.notified_app_shutting)
         self.appshutdown.connect(self.ui.define_page.notified_app_shutting)
         self.appshutdown.connect(self.ui.audio_page.notified_app_shutting)
@@ -91,7 +95,9 @@ class MainScreen(QWidgetBase):
             self.ui.stackedWidget.setCurrentIndex(2)
         elif btn_name.startswith("export_btn_"):
             self.ui.stackedWidget.setCurrentIndex(3)
-        elif btn_name.startswith("settings_btn_"):
+        elif btn_name.startswith("logs_btn_"):
             self.ui.stackedWidget.setCurrentIndex(4)
+        elif btn_name.startswith("settings_btn_"):
+            self.ui.stackedWidget.setCurrentIndex(5)
         elif btn_name.startswith("signout_btn"):
             self.close_main_window.emit()

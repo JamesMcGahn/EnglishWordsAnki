@@ -69,6 +69,10 @@ class IconTextNavBarView(QWidget):
         self.export_btn_ict.setObjectName("export_btn_ict")
         self.icon_btn_layout.addWidget(self.export_btn_ict)
 
+        self.logs_btn_ict = QPushButton(" Logs")
+        self.logs_btn_ict.setObjectName("logs_btn_ict")
+        self.icon_btn_layout.addWidget(self.logs_btn_ict)
+
         self.icon_text_nav_vlayout.addLayout(self.icon_btn_layout)
         # Spacer to push settings and signout buttons to the bottom
         self.verticalSpacer_3 = QSpacerItem(
@@ -105,6 +109,11 @@ class IconTextNavBarView(QWidget):
                 self.export_btn_ict,
                 ":/images/export_on.png",
                 ":/images/export_black.png",
+            ),
+            (
+                self.logs_btn_ict,
+                ":/images/logs_on.png",
+                ":/images/logs_black.png",
             ),
             (
                 self.settings_btn_ict,

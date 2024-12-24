@@ -67,6 +67,10 @@ class IconOnlyNavBarView(QWidget):
         self.export_btn_ico.setObjectName("export_btn_ico")
         self.icon_btn_layout.addWidget(self.export_btn_ico)
 
+        self.logs_btn_ico = QPushButton()
+        self.logs_btn_ico.setObjectName("logs_btn_ico")
+        self.icon_btn_layout.addWidget(self.logs_btn_ico)
+
         self.settings_btn_ico = QPushButton()
         self.settings_btn_ico.setObjectName("settings_btn_ico")
 
@@ -93,6 +97,11 @@ class IconOnlyNavBarView(QWidget):
                 self.export_btn_ico,
                 ":/images/export_on.png",
                 ":/images/export_black.png",
+            ),
+            (
+                self.logs_btn_ico,
+                ":/images/logs_on.png",
+                ":/images/logs_black.png",
             ),
             (
                 self.settings_btn_ico,

@@ -26,10 +26,11 @@ from services.settings import AppSettings, SecureCredentials
 
 
 class SettingsPage(QWidgetBase):
-    folder_submit = Signal(str, bool)
+    folder_submit = Signal(str, str)
     import_page_settings = Signal(str, bool)
     audio_page_settings = Signal(str, bool, str, bool)
     sync_page_settings = Signal(str, bool, str, bool)
+    log_page_settings = Signal(str, bool, str, bool)
 
     def __init__(self):
         super().__init__()
@@ -585,7 +586,9 @@ class SettingsPage(QWidgetBase):
         setting_type="ALL",
         type="str",
     ):
+        print("a", value, response)
         if value in response:
+            print("b")
             self.change_setting(key, value, True, setting_type, type)
             icon_label.setIcon(self.check_icon)
             verify_btn.setDisabled(True)
@@ -617,6 +620,7 @@ class SettingsPage(QWidgetBase):
     def verify_log_file_path(self, folder):
 
         isExist = os.path.exists(folder)
+        print("ss", isExist)
         self.response_update(
             [f"{folder if isExist else False}"],
             "log_file_path",
@@ -825,6 +829,8 @@ class SettingsPage(QWidgetBase):
             self.send_audio_page_settings()
         if key in ["words", "models"]:
             self.send_sync_page_settings()
+        if key in ["log_file_path", "log_file_name"]:
+            self.send_logs_page_setting()
 
     def send_import_page_settings(self):
         self.import_page_settings.emit(self.apple_note, self.apple_note_verified)
@@ -842,9 +848,18 @@ class SettingsPage(QWidgetBase):
             self.words_deck, self.words_verified, self.model_deck, self.model_verified
         )
 
+    def send_logs_page_setting(self):
+        self.log_page_settings.emit(
+            self.log_file_path,
+            self.log_file_path_verified,
+            self.log_file_name,
+            self.log_file_name_verified,
+        )
+
     @Slot()
     def send_all_settings(self):
         print("send all settings")
         self.send_import_page_settings()
         self.send_audio_page_settings()
         self.send_sync_page_settings()
+        self.send_logs_page_setting()

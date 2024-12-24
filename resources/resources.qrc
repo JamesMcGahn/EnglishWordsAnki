@@ -30,5 +30,7 @@
     <file>images/information.png</file>
     <file>images/error.png</file>
     <file>images/close.png</file>
+    <file>images/logs_on.png</file>
+    <file>images/logs_black.png</file>
   </qresource>
 </RCC>
