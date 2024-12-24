@@ -36,8 +36,8 @@ class SettingsPage(QWidgetBase):
         self.settings_page_layout = QHBoxLayout(self)
         self.inner_settings_page_layout = QHBoxLayout()
         self.settings_page_layout.addLayout(self.inner_settings_page_layout)
-        vspacer = QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Expanding)
-        self.settings_page_layout.addItem(vspacer)
+        self.vspacer = QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.settings_page_layout.addItem(self.vspacer)
         self.running_tasks = {}
         self.settings = AppSettings()
         self.log_settings = LogSettingsModel()
@@ -61,14 +61,15 @@ class SettingsPage(QWidgetBase):
             QIcon.Mode.Normal,
         )
 
-        hspacer = QSpacerItem(1, 1, QSizePolicy.Expanding, QSizePolicy.Minimum)
-        self.settings_page_layout.addItem(hspacer)
+        self.hspacer = QSpacerItem(1, 1, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        self.hspacer1 = QSpacerItem(1, 1, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        self.settings_page_layout.addItem(self.hspacer)
 
         # self.settings_page_layout.addItem(hspacer)
         self.settings_grid_layout = QGridLayout()
         self.columns = 4
         self.settings_page_layout.addLayout(self.settings_grid_layout)
-        self.settings_page_layout.addItem(hspacer)
+        self.settings_page_layout.addItem(self.hspacer1)
         (
             self.lineEdit_apple_note,
             self.label_apple_note_verfied,
@@ -143,13 +144,14 @@ class SettingsPage(QWidgetBase):
             self.label_google_api_key_verify_btn,
             self.google_api_key_vlayout,
         ) = self.create_input_fields("Google Service:", "Verify Google Service", False)
-
+        self.vspacer2 = QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.vspacer3 = QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Expanding)
         self.settings_grid_layout.addItem(
-            vspacer, self.settings_grid_layout.count() // self.columns, 2
+            self.vspacer2, self.settings_grid_layout.count() // self.columns, 2
         )
         self.google_auth_api_key_paste_btn = QPushButton("Paste API Key")
         self.google_api_key_vlayout.addWidget(self.google_auth_api_key_paste_btn)
-        self.settings_page_layout.addItem(vspacer)
+        self.settings_page_layout.addItem(self.vspacer3)
 
         self.secure_creds = SecureCredentials()
 
