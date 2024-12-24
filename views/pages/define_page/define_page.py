@@ -160,7 +160,7 @@ class DefinePage(QWidgetBase):
 
         self.start_define_btn.setDisabled(True)
         self.word_lookup_thread = WordLookupWorker(self.wordsModel.to_be_defined_words)
-
+        self.word_lookup_thread.send_logs.connect(self.send_logs)
         self.word_lookup_thread.multi_definitions.connect(self.select_definitions)
         self.word_lookup_thread.multi_words.connect(self.select_word)
         self.user_definition_selection.connect(

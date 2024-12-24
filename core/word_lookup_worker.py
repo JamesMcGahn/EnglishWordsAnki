@@ -5,6 +5,7 @@ from models import DefinitionModel, Status, WordModel
 
 
 class WordLookupWorker(QThread):
+    send_logs = Signal(str, str, bool)
     result = Signal(list)
     finished = Signal()
     start_work = Signal()
@@ -34,7 +35,7 @@ class WordLookupWorker(QThread):
         for list_word in self.word_list:
             self.pause_if_needed(self._stop)
             try:
-
+                self.logging(f"Getting Definition for {list_word.word}")
                 response = requests.get(
                     f"https://api.dictionaryapi.dev/api/v2/entries/en/{list_word.word}",
                     timeout=15,
@@ -48,10 +49,15 @@ class WordLookupWorker(QThread):
                 word_choices = []
 
                 if "title" in res and res["title"] == "No Definitions Found":
+                    self.logging(
+                        f"No definitions found for word: {list_word.word} ...Skipping Word...",
+                        "WARN",
+                    )
                     list_word.status = Status.SKIPPED_DEFINED
                     self.skipped_word.emit(list_word)
                     continue
 
+                self.logging(f"Found {len(res)} word for {list_word.word}")
                 for word in res:
                     word_choice = {
                         "word": word["word"],
@@ -62,7 +68,7 @@ class WordLookupWorker(QThread):
 
                 with QMutexLocker(self._mutex):
                     if len(res) > 1:
-
+                        self.logging("Pausing to ask User to Select Word Choice")
                         self.multi_words.emit(word_choices)
                         self._paused = True
 
@@ -70,18 +76,21 @@ class WordLookupWorker(QThread):
                         self._wait_condition.wait(self._mutex)
 
                 if self.word_selection == len(word_choices):
+                    self.logging("User did not select a word choice. Skipping word...")
                     list_word.status = Status.SKIPPED_DEFINED
                     self.skipped_word.emit(list_word)
                     continue
 
                 if len(res) > 1:
-
+                    self.logging(f"User selected option {self.word_selection + 1}")
                     word = res[self.word_selection]
                 else:
                     word = res[0]
 
                 meanings = word["meanings"]
-
+                self.logging(
+                    f"Found {len(meanings)} meanings for word: {list_word.word}"
+                )
                 all_meanings = []
                 for meaning in meanings:
                     for definition in meaning["definitions"]:
@@ -96,6 +105,7 @@ class WordLookupWorker(QThread):
 
                 with QMutexLocker(self._mutex):
                     if len(all_meanings) > 1:
+                        self.logging("Asking User for meanings they want to keep.")
                         self.multi_definitions.emit(list_word.word, all_meanings)
                         self._paused = True
 
@@ -106,6 +116,9 @@ class WordLookupWorker(QThread):
                     all_meanings
                 ):
                     list_word.status = Status.SKIPPED_DEFINED
+                    self.logging(
+                        "User did not select a word meanings. Skipping word..."
+                    )
                     self.skipped_word.emit(list_word)
                     continue
 
@@ -135,11 +148,12 @@ class WordLookupWorker(QThread):
                 list_word.audio = audio
                 list_word.synonyms = ", ".join(meaning.synonyms)
                 list_word.example = example
-
+                self.logging(f"Completed word: {list_word.word}")
                 self.defined_word.emit(list_word)
 
             except Exception as e:
                 print(e)
+        self.logging("No more words left. Ending word look up.")
         self.finished.emit()
 
     @Slot(WordModel)
@@ -169,3 +183,21 @@ class WordLookupWorker(QThread):
     def get_user_word_selection(self, choice):
         self.word_selection = choice
         self.resume()
+
+    @Slot(str, str, bool)
+    def logging(self, msg: str, level: str = "INFO", print_msg: bool = True) -> None:
+        """
+        Logs a message with the specified log level.
+
+        This method send logs to Logger with a message, log level, and
+        an optional flag to print the message.
+
+        Args:
+            msg (str): The message to be logged.
+            level (str, optional): The log level (e.g., "INFO", "WARN", "ERROR"). Defaults to "INFO".
+            print_msg (bool, optional): Flag to determine whether to print the log message. Defaults to True.
+
+        Returns:
+            None
+        """
+        self.send_logs.emit(msg, level, print_msg)
