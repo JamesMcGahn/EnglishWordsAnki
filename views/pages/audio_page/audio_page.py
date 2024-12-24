@@ -28,6 +28,8 @@ class AudioPage(QWidgetBase):
         self.audio_thread = None
         self.anki_audio_path = None
         self.google_api_key_string = None
+        self.anki_audio_path_verified = None
+        self.google_api_key_string_verified = None
 
         # List Widget
         define_queue_qv = QVBoxLayout()
@@ -146,6 +148,8 @@ class AudioPage(QWidgetBase):
     def start_audio_words(self):
         if self.audio_thread and self.audio_thread.isRunning():
             return
+        elif not self.wordsModel.to_be_audio_words:
+            return
         elif not self.google_api_key_string:
             self.log_with_toast(
                 "Google API Key String Not Set",
@@ -155,10 +159,28 @@ class AudioPage(QWidgetBase):
                 parent=self,
             )
             return
+        elif not self.google_api_key_string_verified:
+            self.log_with_toast(
+                "Google API Key Not Verfied",
+                "Please verify the Google API Key on the Settings page.",
+                "WARN",
+                "WARN",
+                parent=self,
+            )
+            return
         elif not self.anki_audio_path:
             self.log_with_toast(
-                "Google API Key String Not Set",
-                "Please enter the Google API Key on the Settings page.",
+                "Anki Audio Path Not Set",
+                "Please enter the Anki audio path on the Settings page.",
+                "WARN",
+                "WARN",
+                parent=self,
+            )
+            return
+        elif not self.anki_audio_path_verified:
+            self.log_with_toast(
+                "Anki Audio Path Not Verified",
+                "Please verify the Anki audio path on the Settings page.",
                 "WARN",
                 "WARN",
                 parent=self,
@@ -222,8 +244,22 @@ class AudioPage(QWidgetBase):
         self.save_words_to_model.emit()
         self.start_sync_for_words.emit(3)
 
-    @Slot(str, str)
-    def receive_settings_update(self, google_api_key_string, anki_audio_path):
-        print("audio page", google_api_key_string, anki_audio_path)
+    @Slot(str, bool, str, bool)
+    def receive_settings_update(
+        self,
+        google_api_key_string,
+        google_api_key_string_verified,
+        anki_audio_path,
+        anki_audio_path_verified,
+    ):
+        print(
+            "audio page",
+            google_api_key_string,
+            google_api_key_string_verified,
+            anki_audio_path,
+            anki_audio_path_verified,
+        )
         self.google_api_key_string = google_api_key_string
+        self.google_api_key_string_verified = google_api_key_string_verified
         self.anki_audio_path = anki_audio_path
+        self.anki_audio_path_verified = anki_audio_path_verified

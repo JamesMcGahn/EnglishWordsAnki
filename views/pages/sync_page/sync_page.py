@@ -26,6 +26,10 @@ class SyncPage(QWidgetBase):
         word_set_layout = QVBoxLayout(self)
 
         self.anki_thread = None
+        self.anki_deck_name = None
+        self.anki_model_name = None
+        self.anki_deck_name_verified = False
+        self.anki_model_name_verified = False
 
         # List Widget
         define_queue_qv = QVBoxLayout()
@@ -159,12 +163,52 @@ class SyncPage(QWidgetBase):
     def start_sync_words(self):
         if self.anki_thread and self.anki_thread.isRunning():
             return
+        elif not self.wordsModel.to_be_synced_words:
+            return
+        elif not self.anki_model_name:
+            self.log_with_toast(
+                "Anki Model Name Not Set",
+                "Please enter the Anki model name on the Settings page.",
+                "WARN",
+                "WARN",
+                parent=self,
+            )
+            return
+        elif not self.anki_deck_name:
+            self.log_with_toast(
+                "Anki Deck Name Not Set",
+                "Please enter the Anki deck name on the Settings page.",
+                "WARN",
+                "WARN",
+                parent=self,
+            )
+            return
+        elif not self.anki_model_name_verified:
+            self.log_with_toast(
+                "Anki Model Name Not Verified",
+                "Please verify the Anki model name on the Settings page.",
+                "WARN",
+                "WARN",
+                parent=self,
+            )
+            return
+        elif not self.anki_deck_name_verified:
+            self.log_with_toast(
+                "Anki Deck Name Not Verifed",
+                "Please verify the Anki deck name on the Settings page.",
+                "WARN",
+                "WARN",
+                parent=self,
+            )
+            return
         else:
             print("hereeee")
             print(self.wordsModel.to_be_synced_words)
             self.start_sync_btn.setDisabled(True)
             self.anki_thread = AnkiExportThread(
-                self.wordsModel.to_be_synced_words, "English Words", "English Vocab"
+                self.wordsModel.to_be_synced_words,
+                self.anki_deck_name,
+                self.anki_model_name,
             )
             self.anki_thread.error_word.connect(
                 lambda word: self.receive_error_word(word, False)
@@ -209,3 +253,20 @@ class SyncPage(QWidgetBase):
             item = self.list_widget.item(index)
             if item and item.data(Qt.UserRole) == word.guid:
                 self.list_widget.takeItem(self.list_widget.row(item))
+
+    @Slot(str, str)
+    def receive_settings_update(
+        self, words_deck, words_deck_verified, model_name, model_name_verified
+    ):
+        print(
+            "sync page",
+            words_deck,
+            words_deck_verified,
+            model_name,
+            model_name_verified,
+        )
+
+        self.anki_deck_name = words_deck
+        self.anki_model_name = model_name
+        self.anki_deck_name_verified = words_deck_verified
+        self.anki_model_name_verified = model_name_verified

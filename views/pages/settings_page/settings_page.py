@@ -26,9 +26,10 @@ from services.settings import AppSettings, SecureCredentials
 
 
 class SettingsPage(QWidgetBase):
-    folder_submit = Signal(str, str)
-    import_page_settings = Signal(str)
-    audio_page_settings = Signal(str, str)
+    folder_submit = Signal(str, bool)
+    import_page_settings = Signal(str, bool)
+    audio_page_settings = Signal(str, bool, str, bool)
+    sync_page_settings = Signal(str, bool, str, bool)
 
     def __init__(self):
         super().__init__()
@@ -308,13 +309,17 @@ class SettingsPage(QWidgetBase):
             self.google_api_key = self.secure_creds.get_creds(
                 "english-dict-secure-settings", "google_api"
             )
-            verified = self.settings.get_value("google_api-verified", False)
+            self.google_api_key_verified = self.settings.get_value(
+                "google_api-verified", False
+            )
 
             self.textEdit_google_api_key.setText(self.google_api_key)
             self.label_google_api_key_verfied.setIcon(
-                self.check_icon if verified else self.x_icon
+                self.check_icon if self.google_api_key_verified else self.x_icon
             )
-            self.label_google_api_key_verify_btn.setDisabled(verified)
+            self.label_google_api_key_verify_btn.setDisabled(
+                self.google_api_key_verified
+            )
 
         def log_file_path():
             self.log_file_path, self.log_file_path_verified = self.get_and_set_settings(
@@ -553,7 +558,6 @@ class SettingsPage(QWidgetBase):
         print(field, value)
         self.settings.begin_group("settings")
         if type == "int":
-
             value = int(value if value else 0)
         self.settings.set_value(field, value)
         self.settings.set_value(f"{field}-verified", verified)
@@ -817,15 +821,28 @@ class SettingsPage(QWidgetBase):
             self.send_import_page_settings()
         if key in ["audio_path", "google_api"]:
             self.send_audio_page_settings()
+        if key in ["words", "models"]:
+            self.send_sync_page_settings()
 
     def send_import_page_settings(self):
-        self.import_page_settings.emit(self.apple_note)
+        self.import_page_settings.emit(self.apple_note, self.apple_note_verified)
 
     def send_audio_page_settings(self):
-        self.audio_page_settings.emit(self.google_api_key, self.anki_audio)
+        self.audio_page_settings.emit(
+            self.google_api_key,
+            self.google_api_key_verified,
+            self.anki_audio,
+            self.anki_audio_verified,
+        )
+
+    def send_sync_page_settings(self):
+        self.sync_page_settings.emit(
+            self.words_deck, self.words_verified, self.model_deck, self.model_verified
+        )
 
     @Slot()
     def send_all_settings(self):
         print("send all settings")
         self.send_import_page_settings()
         self.send_audio_page_settings()
+        self.send_sync_page_settings()

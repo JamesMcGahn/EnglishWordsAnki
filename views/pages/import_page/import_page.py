@@ -28,6 +28,7 @@ class ImportPage(QWidgetBase):
         h_layout = QHBoxLayout()
 
         self.apple_note_name = None
+        self.apple_note_verified = False
 
         self.arrow_up = QPushButton("")
         self.arrow_down = QPushButton("")
@@ -133,10 +134,20 @@ class ImportPage(QWidgetBase):
             self.list_widget.setCurrentRow(0)
 
     def import_words_from_apple_notes(self):
+        print(self.apple_note_name, self.apple_note_verified)
         if not self.apple_note_name:
             self.log_with_toast(
                 "Apple Note Name Not Set",
                 "Please enter the Apple note name on the Settings page.",
+                "WARN",
+                "WARN",
+                parent=self,
+            )
+            return
+        if not self.apple_note_verified:
+            self.log_with_toast(
+                "Apple Note Name Not Verified",
+                "Please verified the Apple note name on the Settings page.",
                 "WARN",
                 "WARN",
                 parent=self,
@@ -169,7 +180,8 @@ class ImportPage(QWidgetBase):
         self.save_words_to_model.emit()
         self.start_defining_words.emit(1)
 
-    @Slot(str)
-    def receive_settings_update(self, apple_note):
+    @Slot(str, bool)
+    def receive_settings_update(self, apple_note, apple_note_verified):
         print("import page", apple_note)
         self.apple_note_name = apple_note
+        self.apple_note_verified = apple_note_verified
