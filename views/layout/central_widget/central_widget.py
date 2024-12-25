@@ -53,6 +53,7 @@ class CentralWidget(QWidgetBase):
         self.main_screen_widget.send_logs.connect(self.logging)
         self.appshutdown.connect(self.main_screen_widget.notified_app_shutting)
         self.main_screen_widget.page_changed.connect(self.page_changed)
+        self.main_screen_widget.force_update.connect(self.update_paint)
 
     def paintEvent(self, event: QPaintEvent) -> None:
         """
@@ -93,3 +94,6 @@ class CentralWidget(QWidgetBase):
             None: This function does not return a value.
         """
         self.close_main_window.emit()
+
+    def update_paint(self) -> None:
+        self.update()

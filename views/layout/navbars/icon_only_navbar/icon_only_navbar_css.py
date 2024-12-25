@@ -12,6 +12,7 @@ QPushButton {
   border-radius: 4px;
   background-color: transparent;
   min-height: 25px;
+  border: none;
 }
 
 QPushButton:checked {

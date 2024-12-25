@@ -23,6 +23,7 @@ class MainScreen(QWidgetBase):
     close_main_window = Signal()
     page_changed = Signal(int)
     send_app_settings = Signal()
+    force_update = Signal()
 
     def __init__(self):
         """
@@ -101,3 +102,4 @@ class MainScreen(QWidgetBase):
             self.ui.stackedWidget.setCurrentIndex(5)
         elif btn_name.startswith("signout_btn"):
             self.close_main_window.emit()
+        self.force_update.emit()
