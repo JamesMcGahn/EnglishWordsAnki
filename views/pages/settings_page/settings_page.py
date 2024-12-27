@@ -24,6 +24,8 @@ from models import LogSettingsModel, Status, WordModel
 from services.network import NetworkWorker
 from services.settings import AppSettings, SecureCredentials
 
+from .sp_input_factory import SettingsPageInputFactory
+
 
 class SettingsPage(QWidgetBase):
     folder_submit = Signal(str, str)
@@ -44,67 +46,60 @@ class SettingsPage(QWidgetBase):
         self.settings = AppSettings()
         self.log_settings = LogSettingsModel()
 
-        self.x_icon = QIcon()
-        self.x_icon.addFile(
-            ":/images/red_check.png",
-            QSize(),
-            QIcon.Mode.Normal,
-        )
-        self.check_icon = QIcon()
-        self.check_icon.addFile(
-            ":/images/green_check.png",
-            QSize(),
-            QIcon.Mode.Normal,
-        )
-        self.folder_icon = QIcon()
-        self.folder_icon.addFile(
-            ":/images/open_folder_on.png",
-            QSize(),
-            QIcon.Mode.Normal,
-        )
-
         self.hspacer = QSpacerItem(1, 1, QSizePolicy.Expanding, QSizePolicy.Minimum)
         self.hspacer1 = QSpacerItem(1, 1, QSizePolicy.Expanding, QSizePolicy.Minimum)
         self.settings_page_layout.addItem(self.hspacer)
 
         # self.settings_page_layout.addItem(hspacer)
         self.settings_grid_layout = QGridLayout()
-        self.columns = 4
+        self.sp_input_factory = SettingsPageInputFactory(self.settings_grid_layout, 4)
         self.settings_page_layout.addLayout(self.settings_grid_layout)
+        self.check_icon = self.sp_input_factory.check_icon
+        self.x_icon = self.sp_input_factory.x_icon
+        self.folder_icon = self.sp_input_factory.folder_icon
+
+        self.columns = 4
+
         self.settings_page_layout.addItem(self.hspacer1)
         (
             self.lineEdit_apple_note,
             self.label_apple_note_verfied,
             self.label_apple_note_verify_btn,
             self.apple_note_hlayout,
-        ) = self.create_input_fields("Apple Note Name:", "Verify Apple Note")
+        ) = self.sp_input_factory.create_input_fields(
+            "Apple Note Name:", "Verify Apple Note"
+        )
         (
             self.lineEdit_anki_words_deck,
             self.label_anki_words_deck_verfied,
             self.label_anki_words_verify_btn,
             self.anki_words_deck_hlayout,
-        ) = self.create_input_fields("Word's Deck Name:", "Verify Deck")
+        ) = self.sp_input_factory.create_input_fields(
+            "Word's Deck Name:", "Verify Deck"
+        )
 
         (
             self.lineEdit_anki_model_deck,
             self.label_anki_model_deck_verfied,
             self.label_anki_model_verify_btn,
             self.anki_model_deck_hlayout,
-        ) = self.create_input_fields("Word's Model Name:", "Verify Model")
+        ) = self.sp_input_factory.create_input_fields(
+            "Word's Model Name:", "Verify Model"
+        )
 
         (
             self.lineEdit_anki_user,
             self.label_anki_user_verfied,
             self.label_anki_user_verify_btn,
             self.anki_user_hlayout,
-        ) = self.create_input_fields("Anki User Name:", "Verify User")
+        ) = self.sp_input_factory.create_input_fields("Anki User Name:", "Verify User")
         (
             self.lineEdit_anki_audio_path,
             self.label_anki_audio_path_verfied,
             self.label_anki_audio_path_verify_btn,
             self.anki_audio_path_hlayout,
             self.anki_audio_path_folder_btn,
-        ) = self.create_input_fields(
+        ) = self.sp_input_factory.create_input_fields(
             "Anki Audio path:", "Verify Audio Path", folder_icon=True
         )
         (
@@ -113,7 +108,7 @@ class SettingsPage(QWidgetBase):
             self.label_log_file_path_verify_btn,
             self.log_file_path_hlayout,
             self.log_file_path_folder_btn,
-        ) = self.create_input_fields(
+        ) = self.sp_input_factory.create_input_fields(
             "Log File path:", "Verify Log Path", folder_icon=True
         )
         (
@@ -121,31 +116,41 @@ class SettingsPage(QWidgetBase):
             self.label_log_file_name_verfied,
             self.label_log_file_name_verify_btn,
             self.log_file_name_hlayout,
-        ) = self.create_input_fields("Log File Name:", "Save Log File Name")
+        ) = self.sp_input_factory.create_input_fields(
+            "Log File Name:", "Save Log File Name"
+        )
         (
             self.lineEdit_log_backup_count,
             self.label_log_backup_count_verfied,
             self.label_log_backup_count_verify_btn,
             self.log_backup_count_hlayout,
-        ) = self.create_input_fields("Log Backup Count:", "Save Log Backup Count")
+        ) = self.sp_input_factory.create_input_fields(
+            "Log Backup Count:", "Save Log Backup Count"
+        )
         (
             self.lineEdit_log_file_max_mbs,
             self.label_log_file_max_mbs_verfied,
             self.label_log_file_max_mbs_verify_btn,
             self.log_file_max_mbs_hlayout,
-        ) = self.create_input_fields("Log File Max Mbs:", "Save Log File Max Mbs")
+        ) = self.sp_input_factory.create_input_fields(
+            "Log File Max Mbs:", "Save Log File Max Mbs"
+        )
         (
             self.lineEdit_log_keep_files_days,
             self.label_log_keep_files_days_verfied,
             self.label_log_keep_files_days_verify_btn,
             self.log_keep_files_days_hlayout,
-        ) = self.create_input_fields("Keep Log File Days:", "Save Log File Days")
+        ) = self.sp_input_factory.create_input_fields(
+            "Keep Log File Days:", "Save Log File Days"
+        )
         (
             self.textEdit_google_api_key,
             self.label_google_api_key_verfied,
             self.label_google_api_key_verify_btn,
             self.google_api_key_vlayout,
-        ) = self.create_input_fields("Google Service:", "Verify Google Service", False)
+        ) = self.sp_input_factory.create_input_fields(
+            "Google Service:", "Verify Google Service", False
+        )
         self.vspacer2 = QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Expanding)
         self.vspacer3 = QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Expanding)
         self.settings_grid_layout.addItem(
@@ -728,71 +733,6 @@ class SettingsPage(QWidgetBase):
             self.label_anki_user_verify_btn,
             self.anki_user_verified,
             "user",
-        )
-
-    def create_input_fields(
-        self, label_text, verify_button_text, lineEdit=True, folder_icon=False
-    ):
-        last_row = self.settings_grid_layout.count() // self.columns
-        h_layout = QHBoxLayout()
-        h_layout.setAlignment(Qt.AlignLeft)
-
-        label = QLabel(label_text)
-        label.setMinimumWidth(143)
-        label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Preferred)
-
-        verify_icon_button = QPushButton()
-        verify_icon_button.setMaximumWidth(40)
-        verify_icon_button.setStyleSheet("background:transparent;border: none;")
-        verify_button = QPushButton(verify_button_text)
-        verify_button.setCursor(Qt.PointingHandCursor)
-
-        self.settings_grid_layout.addWidget(label, last_row, 0, Qt.AlignTop)
-
-        if folder_icon:
-            folder_icon_button = QPushButton()
-            folder_icon_button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Preferred)
-            folder_icon_button.setStyleSheet(
-                "background:transparent;border: none; margin: 0px; padding: 0px;"
-            )
-
-            folder_icon_button.setCursor(Qt.PointingHandCursor)
-
-            folder_icon_button.setIcon(self.folder_icon)
-
-        if lineEdit:
-            line_edit_field = QLineEdit()
-
-            h_layout.addWidget(line_edit_field)
-            if folder_icon:
-                h_layout.addWidget(folder_icon_button)
-            self.settings_grid_layout.addLayout(h_layout, last_row, 1, Qt.AlignTop)
-        else:
-
-            h_layout = QVBoxLayout()
-            text_edit_field = QTextEdit()
-
-            h_layout.addWidget(text_edit_field)
-            self.settings_grid_layout.addLayout(h_layout, last_row, 1, Qt.AlignTop)
-
-        self.settings_grid_layout.addWidget(
-            verify_icon_button, last_row, 2, Qt.AlignTop
-        )
-        self.settings_grid_layout.addWidget(verify_button, last_row, 3, Qt.AlignTop)
-
-        if folder_icon:
-            return (
-                line_edit_field if lineEdit else text_edit_field,
-                verify_icon_button,
-                verify_button,
-                h_layout,
-                folder_icon_button,
-            )
-        return (
-            line_edit_field if lineEdit else text_edit_field,
-            verify_icon_button,
-            verify_button,
-            h_layout,
         )
 
     def open_folder_dialog(self, key, input_field) -> None:
