@@ -9,7 +9,7 @@ from ..navbars import HeaderNavBar, IconOnlyNavBar, IconTextNavBar
 
 
 class CentralWidget(QWidgetBase):
-    close_main_window = Signal()
+    close_main_window = Signal(int)
 
     def __init__(self):
         super().__init__()
@@ -84,16 +84,20 @@ class CentralWidget(QWidgetBase):
                 self.icon_only_widget.ui.audio_btn_ico.setChecked(True)
             case 3:
                 self.icon_only_widget.ui.export_btn_ico.setChecked(True)
+            case 4:
+                self.icon_only_widget.ui.logs_btn_ico.setChecked(True)
+            case 5:
+                self.icon_only_widget.ui.settings_btn_ico.setChecked(True)
 
-    @Slot()
-    def close_icon_clicked(self) -> None:
+    @Slot(int)
+    def close_icon_clicked(self, current_index) -> None:
         """
         Slot emits signal close_main_window to close main window
 
         Returns:
             None: This function does not return a value.
         """
-        self.close_main_window.emit()
+        self.close_main_window.emit(current_index)
 
     def update_paint(self) -> None:
         self.update()

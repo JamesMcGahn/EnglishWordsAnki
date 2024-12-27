@@ -20,7 +20,7 @@ class MainScreen(QWidgetBase):
         close_main_window (Signal): emits a notification to close the main window
     """
 
-    close_main_window = Signal()
+    close_main_window = Signal(int)
     page_changed = Signal(int)
     send_app_settings = Signal()
     force_update = Signal()
@@ -101,5 +101,5 @@ class MainScreen(QWidgetBase):
         elif btn_name.startswith("settings_btn_"):
             self.ui.stackedWidget.setCurrentIndex(5)
         elif btn_name.startswith("signout_btn"):
-            self.close_main_window.emit()
+            self.close_main_window.emit(self.ui.stackedWidget.currentIndex())
         self.force_update.emit()

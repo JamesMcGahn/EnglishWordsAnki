@@ -1,4 +1,4 @@
-from PySide6.QtCore import QSize, QThread, Signal
+from PySide6.QtCore import QSize, QThread, Signal, Slot
 from PySide6.QtGui import QAction, QCloseEvent, QFont, QFontDatabase, QIcon
 from PySide6.QtWidgets import (
     QMainWindow,
@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from components.dialogs import ConfirmationDialog
 from services.logger import Logger
 from views.layout import CentralWidget
 
@@ -16,6 +17,7 @@ from views.layout import CentralWidget
 class MainWindow(QMainWindow):
     appshutdown = Signal()
     send_logs = Signal(str, str, bool)
+    change_page = Signal(int)
 
     def __init__(self, app):
         super().__init__()
@@ -42,9 +44,10 @@ class MainWindow(QMainWindow):
         self.logger = Logger(turn_off_print=False)
         self.send_logs.connect(self.logger.insert)
         self.centralWidget.send_logs.connect(self.logger.insert)
+        self.centralWidget.close_main_window.connect(self.close_main_window)
         self.appshutdown.connect(self.logger.close)
         self.appshutdown.connect(self.centralWidget.notified_app_shutting)
-
+        self.change_page.connect(self.centralWidget.page_changed)
         app_icon = QIcon()
         app_icon.addFile(":/system_icons/tray_icon_16.png", QSize(16, 16))
         app_icon.addFile(":/system_icons/tray_icon_24.png", QSize(24, 24))
@@ -84,6 +87,26 @@ class MainWindow(QMainWindow):
                 self.activateWindow()  # Bring the window to the front
             else:
                 self.showMinimized()
+
+    @Slot(int)
+    def close_main_window(self, current_index) -> None:
+        """
+        Slot that shows Confirmation Dialog to ask user to confirm they want to quit the application.
+
+        Returns:
+            None: This function does not return a value.
+        """
+        dialog = ConfirmationDialog(
+            "Close Application?",
+            "Are you sure you do want to close the application?",
+            "Close",
+        )
+        self.send_logs.emit("Close Application Button Clicked", "INFO", True)
+        if dialog.show():
+            self.close()
+        else:
+            self.change_page.emit(current_index)
+            self.send_logs.emit("Cancelled Closing Application", "INFO", True)
 
     def closeEvent(self, event: QCloseEvent) -> None:
         """
