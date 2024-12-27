@@ -118,12 +118,12 @@ class IconTextNavBarView(QWidget):
             (
                 self.settings_btn_ict,
                 ":/images/settings_on.png",
-                ":/images/settings_off.png",
+                ":/images/settings_black.png",
             ),
             (
                 self.signout_btn_ict,
                 ":/images/signout_on.png",
-                ":/images/signout_off.png",
+                ":/images/signout_black.png",
             ),
         ]
         # Apply icons and styles to each button
