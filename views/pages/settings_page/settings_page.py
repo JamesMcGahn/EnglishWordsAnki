@@ -31,6 +31,7 @@ class SettingsPage(QWidgetBase):
     audio_page_settings = Signal(str, bool, str, bool)
     sync_page_settings = Signal(str, bool, str, bool)
     log_page_settings = Signal(str, bool, str, bool)
+    save_log_settings_model = Signal(str, str, int, int, int, bool)
 
     def __init__(self):
         super().__init__()
@@ -161,6 +162,7 @@ class SettingsPage(QWidgetBase):
         self.get_settings("ALL", setText=True)
 
         self.folder_submit.connect(self.folder_change)
+        self.save_log_settings_model.connect(self.log_settings.save_log_settings)
         self.label_apple_note_verify_btn.clicked.connect(self.verify_apple_note_name)
         self.label_anki_words_verify_btn.clicked.connect(self.verify_deck_name)
         self.label_anki_model_verify_btn.clicked.connect(self.verify_deck_model)
@@ -829,7 +831,13 @@ class SettingsPage(QWidgetBase):
             self.send_audio_page_settings()
         if key in ["words", "models"]:
             self.send_sync_page_settings()
-        if key in ["log_file_path", "log_file_name"]:
+        if key in [
+            "log_file_path",
+            "log_file_name",
+            "log_backup_count",
+            "log_file_max_mbs",
+            "log_keep_files_days",
+        ]:
             self.send_logs_page_setting()
 
     def send_import_page_settings(self):
@@ -854,6 +862,14 @@ class SettingsPage(QWidgetBase):
             self.log_file_path_verified,
             self.log_file_name,
             self.log_file_name_verified,
+        )
+        self.save_log_settings_model.emit(
+            self.log_file_path,
+            self.log_file_name,
+            self.log_file_max_mbs,
+            self.log_backup_count,
+            self.log_keep_files_days,
+            False,
         )
 
     @Slot()
