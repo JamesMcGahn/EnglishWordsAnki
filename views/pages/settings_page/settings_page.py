@@ -200,56 +200,81 @@ class SettingsPage(QWidgetBase):
                 "anki_audio_path", self.lineEdit_anki_audio_path
             )
         )
-        self.lineEdit_apple_note.textChanged.connect(
-            lambda word, field="apple_note_name", icon_label=self.label_apple_note_verfied, verify_btn=self.label_apple_note_verify_btn: self.handle_setting_change(
-                field, word, icon_label, verify_btn
-            )
-        )
-        self.lineEdit_anki_words_deck.textChanged.connect(
-            lambda word, field="anki_deck_name", icon_label=self.label_anki_words_deck_verfied, verify_btn=self.label_anki_words_verify_btn: self.handle_setting_change(
-                field, word, icon_label, verify_btn
-            )
-        )
-        self.lineEdit_anki_model_deck.textChanged.connect(
-            lambda word, field="anki_model_name", icon_label=self.label_anki_model_deck_verfied, verify_btn=self.label_anki_model_verify_btn: self.handle_setting_change(
-                field, word, icon_label, verify_btn
-            )
-        )
-        self.lineEdit_anki_user.textChanged.connect(
-            lambda word, field="anki_user", icon_label=self.label_anki_user_verfied, verify_btn=self.label_anki_user_verify_btn: self.handle_setting_change(
-                field, word, icon_label, verify_btn
-            )
-        )
-        self.lineEdit_anki_audio_path.textChanged.connect(
-            lambda word, field="anki_audio_path", icon_label=self.label_anki_audio_path_verfied, verify_btn=self.label_anki_audio_path_verify_btn: self.handle_setting_change(
-                field, word, icon_label, verify_btn
-            )
-        )
-        self.lineEdit_log_file_path.textChanged.connect(
-            lambda word, field="log_file_path", icon_label=self.label_log_file_path_verfied, verify_btn=self.label_log_file_path_verify_btn: self.handle_setting_change(
-                field, word, icon_label, verify_btn
-            )
-        )
-        self.lineEdit_log_file_name.textChanged.connect(
-            lambda word, field="log_file_name", icon_label=self.label_log_file_path_verfied, verify_btn=self.label_log_file_name_verify_btn: self.handle_setting_change(
-                field, word, icon_label, verify_btn
-            )
-        )
-        self.lineEdit_log_backup_count.textChanged.connect(
-            lambda word, field="log_backup_count", icon_label=self.label_log_backup_count_verfied, verify_btn=self.label_log_backup_count_verify_btn: self.handle_setting_change(
-                field, word, icon_label, verify_btn, type="int"
-            )
-        )
-        self.lineEdit_log_file_max_mbs.textChanged.connect(
-            lambda word, field="log_file_max_mbs", icon_label=self.label_log_file_max_mbs_verfied, verify_btn=self.label_log_file_max_mbs_verify_btn: self.handle_setting_change(
-                field, word, icon_label, verify_btn, type="int"
-            )
-        )
-        self.lineEdit_log_keep_files_days.textChanged.connect(
-            lambda word, field="log_keep_files_days", icon_label=self.label_log_keep_files_days_verfied, verify_btn=self.label_log_keep_files_days_verify_btn: self.handle_setting_change(
-                field, word, icon_label, verify_btn, type="int"
-            )
-        )
+
+        self.line_edit_connections = [
+            (
+                self.lineEdit_apple_note,
+                "apple_note_name",
+                self.label_apple_note_verfied,
+                self.label_apple_note_verify_btn,
+                "str",
+            ),
+            (
+                self.lineEdit_anki_words_deck,
+                "anki_deck_name",
+                self.label_anki_words_deck_verfied,
+                self.label_anki_words_verify_btn,
+                "str",
+            ),
+            (
+                self.lineEdit_anki_model_deck,
+                "anki_model_name",
+                self.label_anki_model_deck_verfied,
+                self.label_anki_model_verify_btn,
+                "str",
+            ),
+            (
+                self.lineEdit_anki_user,
+                "anki_user",
+                self.label_anki_user_verfied,
+                self.label_anki_user_verify_btn,
+                "str",
+            ),
+            (
+                self.lineEdit_anki_audio_path,
+                "anki_audio_path",
+                self.label_anki_audio_path_verfied,
+                self.label_anki_audio_path_verify_btn,
+                "str",
+            ),
+            (
+                self.lineEdit_log_file_path,
+                "log_file_path",
+                self.label_log_file_path_verfied,
+                self.label_log_file_path_verify_btn,
+                "str",
+            ),
+            (
+                self.lineEdit_log_file_name,
+                "log_file_name",
+                self.label_log_file_path_verfied,
+                self.label_log_file_name_verify_btn,
+                "str",
+            ),
+            (
+                self.lineEdit_log_backup_count,
+                "log_backup_count",
+                self.label_log_backup_count_verfied,
+                self.label_log_backup_count_verify_btn,
+                "int",
+            ),
+            (
+                self.lineEdit_log_file_max_mbs,
+                "log_file_max_mbs",
+                self.label_log_file_max_mbs_verfied,
+                self.label_log_file_max_mbs_verify_btn,
+                "int",
+            ),
+            (
+                self.lineEdit_log_keep_files_days,
+                "log_keep_files_days",
+                self.label_log_keep_files_days_verfied,
+                self.label_log_keep_files_days_verify_btn,
+                "int",
+            ),
+        ]
+
+        self.setup_text_changed_connections()
         self.textEdit_google_api_key.setReadOnly(True)
         self.google_auth_api_key_paste_btn.clicked.connect(self.google_auth_paste_text)
         # self.textEdit_google_api_key.textChanged.connect(
@@ -257,6 +282,15 @@ class SettingsPage(QWidgetBase):
         #         field, self.textEdit_google_api_key
         #     )
         # )
+
+    def setup_text_changed_connections(self):
+        for item in self.line_edit_connections:
+            line_edit, field, icon_label, verify_btn, field_type = item
+            line_edit.textChanged.connect(
+                lambda word, field=field, icon_label=icon_label, verify_btn=verify_btn, type=field_type: self.handle_setting_change(
+                    field, word, icon_label, verify_btn, type=type
+                )
+            )
 
     def handle_setting_change(self, field, word, icon_label, verify_btn, type="str"):
         """
