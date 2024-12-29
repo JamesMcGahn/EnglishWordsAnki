@@ -1,26 +1,19 @@
 import os
 
-from PySide6.QtCore import QRect, QSize, Qt, QThread, Signal, Slot
-from PySide6.QtGui import QColor, QFont, QIcon, QPainter
+from PySide6.QtCore import QThread, Signal, Slot
 from PySide6.QtWidgets import (
     QApplication,
     QFileDialog,
     QGridLayout,
     QHBoxLayout,
-    QLabel,
-    QLineEdit,
-    QListWidget,
-    QListWidgetItem,
     QPushButton,
     QSizePolicy,
     QSpacerItem,
-    QTextEdit,
-    QVBoxLayout,
 )
 
 from base import QWidgetBase
 from core import AppleNoteImport, AudioThread, RemoveDuplicateAudio
-from models import LogSettingsModel, Status, WordModel
+from models import AppSettingsModel, LogSettingsModel, Status, WordModel
 from services.network import NetworkWorker
 from services.settings import AppSettings, SecureCredentials
 
@@ -44,6 +37,7 @@ class SettingsPage(QWidgetBase):
         self.settings_page_layout.addItem(self.vspacer)
         self.running_tasks = {}
         self.settings = AppSettings()
+        self.settings_model = AppSettingsModel()
         self.log_settings = LogSettingsModel()
 
         self.hspacer = QSpacerItem(1, 1, QSizePolicy.Expanding, QSizePolicy.Minimum)
@@ -67,7 +61,7 @@ class SettingsPage(QWidgetBase):
             self.label_apple_note_verify_btn,
             self.apple_note_hlayout,
         ) = self.sp_input_factory.create_input_fields(
-            "Apple Note Name:", "Verify Apple Note"
+            "apple_note_name", "Apple Note Name:", "Verify Apple Note"
         )
         (
             self.lineEdit_anki_words_deck,
@@ -75,7 +69,7 @@ class SettingsPage(QWidgetBase):
             self.label_anki_words_verify_btn,
             self.anki_words_deck_hlayout,
         ) = self.sp_input_factory.create_input_fields(
-            "Word's Deck Name:", "Verify Deck"
+            "anki_deck_name", "Word's Deck Name:", "Verify Deck"
         )
 
         (
@@ -84,7 +78,7 @@ class SettingsPage(QWidgetBase):
             self.label_anki_model_verify_btn,
             self.anki_model_deck_hlayout,
         ) = self.sp_input_factory.create_input_fields(
-            "Word's Model Name:", "Verify Model"
+            "anki_model_name", "Word's Model Name:", "Verify Model"
         )
 
         (
@@ -92,7 +86,9 @@ class SettingsPage(QWidgetBase):
             self.label_anki_user_verfied,
             self.label_anki_user_verify_btn,
             self.anki_user_hlayout,
-        ) = self.sp_input_factory.create_input_fields("Anki User Name:", "Verify User")
+        ) = self.sp_input_factory.create_input_fields(
+            "anki_user", "Anki User Name:", "Verify User"
+        )
         (
             self.lineEdit_anki_audio_path,
             self.label_anki_audio_path_verfied,
@@ -100,7 +96,7 @@ class SettingsPage(QWidgetBase):
             self.anki_audio_path_hlayout,
             self.anki_audio_path_folder_btn,
         ) = self.sp_input_factory.create_input_fields(
-            "Anki Audio path:", "Verify Audio Path", folder_icon=True
+            "anki_audio_path", "Anki Audio path:", "Verify Audio Path", folder_icon=True
         )
         (
             self.lineEdit_log_file_path,
@@ -109,7 +105,7 @@ class SettingsPage(QWidgetBase):
             self.log_file_path_hlayout,
             self.log_file_path_folder_btn,
         ) = self.sp_input_factory.create_input_fields(
-            "Log File path:", "Verify Log Path", folder_icon=True
+            "log_file_path", "Log File path:", "Verify Log Path", folder_icon=True
         )
         (
             self.lineEdit_log_file_name,
@@ -117,7 +113,7 @@ class SettingsPage(QWidgetBase):
             self.label_log_file_name_verify_btn,
             self.log_file_name_hlayout,
         ) = self.sp_input_factory.create_input_fields(
-            "Log File Name:", "Save Log File Name"
+            "log_file_name", "Log File Name:", "Save Log File Name"
         )
         (
             self.lineEdit_log_backup_count,
@@ -125,7 +121,7 @@ class SettingsPage(QWidgetBase):
             self.label_log_backup_count_verify_btn,
             self.log_backup_count_hlayout,
         ) = self.sp_input_factory.create_input_fields(
-            "Log Backup Count:", "Save Log Backup Count"
+            "log_backup_count", "Log Backup Count:", "Save Log Backup Count"
         )
         (
             self.lineEdit_log_file_max_mbs,
@@ -133,7 +129,7 @@ class SettingsPage(QWidgetBase):
             self.label_log_file_max_mbs_verify_btn,
             self.log_file_max_mbs_hlayout,
         ) = self.sp_input_factory.create_input_fields(
-            "Log File Max Mbs:", "Save Log File Max Mbs"
+            "log_file_max_mbs", "Log File Max Mbs:", "Save Log File Max Mbs"
         )
         (
             self.lineEdit_log_keep_files_days,
@@ -141,7 +137,7 @@ class SettingsPage(QWidgetBase):
             self.label_log_keep_files_days_verify_btn,
             self.log_keep_files_days_hlayout,
         ) = self.sp_input_factory.create_input_fields(
-            "Keep Log File Days:", "Save Log File Days"
+            "log_keep_files_days", "Keep Log File Days:", "Save Log File Days"
         )
         (
             self.textEdit_google_api_key,
@@ -149,7 +145,7 @@ class SettingsPage(QWidgetBase):
             self.label_google_api_key_verify_btn,
             self.google_api_key_vlayout,
         ) = self.sp_input_factory.create_input_fields(
-            "Google Service:", "Verify Google Service", False
+            "google_api_key", "Google Service:", "Verify Google Service", False
         )
         self.vspacer2 = QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Expanding)
         self.vspacer3 = QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Expanding)
@@ -164,7 +160,7 @@ class SettingsPage(QWidgetBase):
 
         self.home_directory = os.path.expanduser("~")
         print("home", self.home_directory)
-        self.get_settings("ALL", setText=True)
+        # self.get_settings("ALL", setText=True)
 
         self.folder_submit.connect(self.folder_change)
         self.save_log_settings_model.connect(self.log_settings.save_log_settings)
@@ -184,7 +180,9 @@ class SettingsPage(QWidgetBase):
             self.verify_log_keep_files_days
         )
         self.label_anki_audio_path_verify_btn.clicked.connect(
-            lambda: self.open_folder_dialog("audio_path", self.lineEdit_anki_audio_path)
+            lambda: self.open_folder_dialog(
+                "anki_audio_path", self.lineEdit_anki_audio_path
+            )
         )
         self.label_log_file_path_verify_btn.clicked.connect(
             lambda: self.open_folder_dialog(
@@ -198,56 +196,58 @@ class SettingsPage(QWidgetBase):
             )
         )
         self.anki_audio_path_folder_btn.clicked.connect(
-            lambda: self.open_folder_dialog("audio_path", self.lineEdit_anki_audio_path)
+            lambda: self.open_folder_dialog(
+                "anki_audio_path", self.lineEdit_anki_audio_path
+            )
         )
         self.lineEdit_apple_note.textChanged.connect(
-            lambda word, field="apple_note": self.change_setting(
-                field, word, setting_type=field
+            lambda word, field="apple_note_name", icon_label=self.label_apple_note_verfied, verify_btn=self.label_apple_note_verify_btn: self.handle_setting_change(
+                field, word, icon_label, verify_btn
             )
         )
         self.lineEdit_anki_words_deck.textChanged.connect(
-            lambda word, field="words": self.change_setting(
-                field, word, setting_type=field
+            lambda word, field="anki_deck_name", icon_label=self.label_anki_words_deck_verfied, verify_btn=self.label_anki_words_verify_btn: self.handle_setting_change(
+                field, word, icon_label, verify_btn
             )
         )
         self.lineEdit_anki_model_deck.textChanged.connect(
-            lambda word, field="model": self.change_setting(
-                field, word, setting_type=field
+            lambda word, field="anki_model_name", icon_label=self.label_anki_model_deck_verfied, verify_btn=self.label_anki_model_verify_btn: self.handle_setting_change(
+                field, word, icon_label, verify_btn
             )
         )
         self.lineEdit_anki_user.textChanged.connect(
-            lambda word, field="user": self.change_setting(
-                field, word, setting_type=field
+            lambda word, field="anki_user", icon_label=self.label_anki_user_verfied, verify_btn=self.label_anki_user_verify_btn: self.handle_setting_change(
+                field, word, icon_label, verify_btn
             )
         )
         self.lineEdit_anki_audio_path.textChanged.connect(
-            lambda word, field="audio_path": self.change_setting(
-                field, word, setting_type=field
+            lambda word, field="anki_audio_path", icon_label=self.label_anki_audio_path_verfied, verify_btn=self.label_anki_audio_path_verify_btn: self.handle_setting_change(
+                field, word, icon_label, verify_btn
             )
         )
         self.lineEdit_log_file_path.textChanged.connect(
-            lambda word, field="log_file_path": self.change_setting(
-                field, word, setting_type=field
+            lambda word, field="log_file_path", icon_label=self.label_log_file_path_verfied, verify_btn=self.label_log_file_path_verify_btn: self.handle_setting_change(
+                field, word, icon_label, verify_btn
             )
         )
         self.lineEdit_log_file_name.textChanged.connect(
-            lambda word, field="log_file_name": self.change_setting(
-                field, word, setting_type=field
+            lambda word, field="log_file_name", icon_label=self.label_log_file_path_verfied, verify_btn=self.label_log_file_name_verify_btn: self.handle_setting_change(
+                field, word, icon_label, verify_btn
             )
         )
         self.lineEdit_log_backup_count.textChanged.connect(
-            lambda word, field="log_backup_count": self.change_setting(
-                field, word, setting_type=field, type="int"
+            lambda word, field="log_backup_count", icon_label=self.label_log_backup_count_verfied, verify_btn=self.label_log_backup_count_verify_btn: self.handle_setting_change(
+                field, word, icon_label, verify_btn, type="int"
             )
         )
         self.lineEdit_log_file_max_mbs.textChanged.connect(
-            lambda word, field="log_file_max_mbs": self.change_setting(
-                field, word, setting_type=field, type="int"
+            lambda word, field="log_file_max_mbs", icon_label=self.label_log_file_max_mbs_verfied, verify_btn=self.label_log_file_max_mbs_verify_btn: self.handle_setting_change(
+                field, word, icon_label, verify_btn, type="int"
             )
         )
         self.lineEdit_log_keep_files_days.textChanged.connect(
-            lambda word, field="log_keep_files_days": self.change_setting(
-                field, word, setting_type=field, type="int"
+            lambda word, field="log_keep_files_days", icon_label=self.label_log_keep_files_days_verfied, verify_btn=self.label_log_keep_files_days_verify_btn: self.handle_setting_change(
+                field, word, icon_label, verify_btn, type="int"
             )
         )
         self.textEdit_google_api_key.setReadOnly(True)
@@ -258,199 +258,20 @@ class SettingsPage(QWidgetBase):
         #     )
         # )
 
-    def textEdit_change_secure_setting(self, field, text_edit):
-        self.google_api_key = text_edit.toPlainText()
-        self.change_secure_setting(field, self.google_api_key, setting_type=field)
+    def handle_setting_change(self, field, word, icon_label, verify_btn, type="str"):
+        """
+        Handles the setting change: saves the new value and updates the icon.
 
-    def get_settings(self, setting="ALL", setText=False):
-        self.settings.begin_group("settings")
-
-        def words_deck():
-            self.words_deck, self.words_verified = self.get_and_set_settings(
-                "words",
-                "",
-                self.lineEdit_anki_words_deck,
-                self.label_anki_words_deck_verfied,
-                self.label_anki_words_verify_btn,
-                setText,
-            )
-
-        def model_deck():
-            self.model_deck, self.model_verified = self.get_and_set_settings(
-                "model",
-                "",
-                self.lineEdit_anki_model_deck,
-                self.label_anki_model_deck_verfied,
-                self.label_anki_model_verify_btn,
-                setText,
-            )
-
-        def anki_user():
-            self.anki_user, self.anki_user_verified = self.get_and_set_settings(
-                "user",
-                "User 1",
-                self.lineEdit_anki_user,
-                self.label_anki_user_verfied,
-                self.label_anki_user_verify_btn,
-                setText,
-            )
-
-        def anki_audio_path():
-            self.anki_audio, self.anki_audio_verified = self.get_and_set_settings(
-                "audio_path",
-                f"{self.home_directory}/Library/Application Support/Anki2/{self.anki_user}/collection.media",
-                self.lineEdit_anki_audio_path,
-                self.label_anki_audio_path_verfied,
-                self.label_anki_audio_path_verify_btn,
-                setText,
-            )
-
-        def apple_note():
-            self.apple_note, self.apple_note_verified = self.get_and_set_settings(
-                "apple_note",
-                "",
-                self.lineEdit_apple_note,
-                self.label_apple_note_verfied,
-                self.label_apple_note_verify_btn,
-                setText,
-            )
-
-        def google_api():
-            self.google_api_key = self.secure_creds.get_creds(
-                "english-dict-secure-settings", "google_api"
-            )
-            self.google_api_key_verified = self.settings.get_value(
-                "google_api-verified", False
-            )
-
-            self.textEdit_google_api_key.setText(self.google_api_key)
-            self.label_google_api_key_verfied.setIcon(
-                self.check_icon if self.google_api_key_verified else self.x_icon
-            )
-            self.label_google_api_key_verify_btn.setDisabled(
-                self.google_api_key_verified
-            )
-
-        def log_file_path():
-            self.log_file_path, self.log_file_path_verified = self.get_and_set_settings(
-                "log_file_path",
-                "./logs/",
-                self.lineEdit_log_file_path,
-                self.label_log_file_path_verfied,
-                self.label_log_file_path_verify_btn,
-                setText,
-            )
-            # TODO connect to the logsettings saved signal to update logging
-
-        def log_file_name():
-            self.log_file_name, self.log_file_name_verified = self.get_and_set_settings(
-                "log_file_name",
-                "file.log",
-                self.lineEdit_log_file_name,
-                self.label_log_file_name_verfied,
-                self.label_log_file_name_verify_btn,
-                setText,
-            )
-
-        def log_backup_count():
-            self.log_backup_count, self.log_backup_count_verified = (
-                self.get_and_set_settings(
-                    "log_backup_count",
-                    5,
-                    self.lineEdit_log_backup_count,
-                    self.label_log_backup_count_verfied,
-                    self.label_log_backup_count_verify_btn,
-                    setText,
-                    "int",
-                )
-            )
-
-        def log_file_max_mbs():
-            self.log_file_max_mbs, self.log_file_max_mbs_verified = (
-                self.get_and_set_settings(
-                    "log_file_max_mbs",
-                    5,
-                    self.lineEdit_log_file_max_mbs,
-                    self.label_log_file_max_mbs_verfied,
-                    self.label_log_file_max_mbs_verify_btn,
-                    setText,
-                    "int",
-                )
-            )
-
-        def log_keep_files_days():
-            self.log_keep_files_days, self.log_keep_files_days_verified = (
-                self.get_and_set_settings(
-                    "log_keep_files_days",
-                    5,
-                    self.lineEdit_log_keep_files_days,
-                    self.label_log_keep_files_days_verfied,
-                    self.label_log_keep_files_days_verify_btn,
-                    setText,
-                    "int",
-                )
-            )
-
-        # TODO connect to the logsettings saved signal to update logging
-
-        match setting:
-            case "words":
-                words_deck()
-            case "model":
-                model_deck()
-            case "user":
-                anki_user()
-            case "audio_path":
-                anki_audio_path()
-            case "apple_note":
-                apple_note()
-            case "google_api":
-                google_api()
-            case "log_file_path":
-                log_file_path()
-            case "log_file_name":
-                log_file_name()
-            case "log_backup_count":
-                log_backup_count()
-            case "log_file_max_mbs":
-                log_file_max_mbs()
-            case "log_keep_files_days":
-                log_keep_files_days()
-
-            case "ALL":
-                words_deck()
-                model_deck()
-                anki_user()
-                anki_audio_path()
-                apple_note()
-                google_api()
-                log_file_path()
-                log_file_name()
-                log_backup_count()
-                log_file_max_mbs()
-                log_keep_files_days()
-        self.settings.end_group()
-
-    def get_and_set_settings(
-        self,
-        key,
-        default,
-        lineEdit,
-        verify_icon_btn,
-        verify_btn,
-        setText=False,
-        type="str",
-    ):
-        value = self.settings.get_value(key, default)
-        verified = self.settings.get_value(f"{key}-verified", False)
-        print(key, value, verified)
-        if type == "int":
-            value = str(value)
-        if setText:
-            lineEdit.setText(value)
-        verify_icon_btn.setIcon(self.check_icon if verified else self.x_icon)
-        verify_btn.setDisabled(verified)
-        return value, verified
+        Args:
+            field (str): The field name for the setting.
+            word (str): The new value of the setting.
+            icon_label (QLabel): The icon label to update.
+        """
+        print(field, word)
+        self.settings_model.change_setting(field, word, type=type)
+        self.sp_input_factory.change_icon_button(icon_label)
+        if verify_btn.isEnabled():
+            verify_btn.setDisabled(False)
 
     def run_network_check(
         self, task_id, url, json_data, success_callback, error_callback, btn
@@ -483,7 +304,7 @@ class SettingsPage(QWidgetBase):
         self.apple_worker = AppleNoteImport(self.lineEdit_apple_note.text())
         self.apple_worker.moveToThread(self.apple_note_thread)
         self.apple_worker.note_name_verified.connect(self.apple_note_response)
-        self.apple_note_thread.finished.connect(self.deleteLater)
+        self.apple_note_thread.finished.connect(self.apple_note_thread.deleteLater)
         self.apple_note_thread.started.connect(self.apple_worker.verify_note_name)
         self.apple_worker.finished.connect(self.apple_worker.deleteLater)
         self.apple_note_thread.start()
@@ -528,7 +349,7 @@ class SettingsPage(QWidgetBase):
         self.audio_thread = AudioThread(
             [WordModel("", "", "test", "", "", "", "", "")],
             folder_path="./",
-            credential_string=self.google_api_key,
+            credential_string=self.textEdit_google_api_key.toPlainText(),
         )
 
         self.audio_thread.audio_word.connect(self.google_api_key_response)
@@ -543,13 +364,11 @@ class SettingsPage(QWidgetBase):
         print()
         success = response.status == Status.AUDIO
         self.response_update(
-            [f"{self.google_api_key if success else False}"],
-            "google_api",
-            self.google_api_key,
-            self.label_anki_audio_path_verfied,
-            self.label_anki_audio_path_verify_btn,
-            self.anki_audio_verified,
-            "google_api",
+            [f"{self.textEdit_google_api_key.toPlainText() if success else False}"],
+            "google_api_key",
+            self.textEdit_google_api_key.toPlainText(),
+            self.label_google_api_key_verfied,
+            self.label_google_api_key_verify_btn,
         )
 
         if success:
@@ -562,26 +381,6 @@ class SettingsPage(QWidgetBase):
             self.removal_thread.finished.connect(self.removal_thread.deleteLater)
             self.removal_thread.start()
 
-    def change_setting(
-        self, field, value, verified=False, setting_type="ALL", type="str"
-    ):
-        print(field, value)
-        self.settings.begin_group("settings")
-        if type == "int":
-            value = int(value if value else 0)
-        self.settings.set_value(field, value)
-        self.settings.set_value(f"{field}-verified", verified)
-        self.settings.end_group()
-        self.get_settings(setting_type, setText=False)
-
-    def change_secure_setting(self, field, value, verified=False, setting_type="ALL"):
-        print(field, value)
-        self.secure_creds.save_creds("english-dict-secure-settings", field, value)
-        self.settings.begin_group("settings")
-        self.settings.set_value(f"{field}-verified", verified)
-        self.settings.end_group()
-        self.get_settings(setting_type, setText=False)
-
     def response_update(
         self,
         response,
@@ -589,39 +388,35 @@ class SettingsPage(QWidgetBase):
         value,
         icon_label,
         verify_btn,
-        model_verified,
-        setting_type="ALL",
         type="str",
     ):
         print("a", value, response)
         if value in response:
             print("b")
-            self.change_setting(key, value, True, setting_type, type)
+            self.settings_model.change_setting(key, value, True, type)
             icon_label.setIcon(self.check_icon)
             verify_btn.setDisabled(True)
-            model_verified = True
+
             self.send_settings_update(key)
         else:
             verify_btn.setDisabled(False)
-            icon_label.setIcon(self.check_icon if model_verified else self.x_icon)
+            icon_label.setIcon(self.x_icon)
 
     @Slot(str, str)
     def folder_change(self, key, folder):
         if key == "log_file_path":
             self.verify_log_file_path(folder)
-        elif key == "audio_path":
+        elif key == "anki_audio_path":
             self.verify_anki_user_audio_path(folder)
 
     def verify_anki_user_audio_path(self, folder):
         isExist = os.path.exists(folder)
         self.response_update(
             [f"{folder if isExist else False}"],
-            "audio_path",
+            "anki_audio_path",
             folder,
             self.label_anki_audio_path_verfied,
             self.label_anki_audio_path_verify_btn,
-            self.anki_audio_verified,
-            "audio_path",
         )
 
     def verify_log_file_path(self, folder):
@@ -634,66 +429,54 @@ class SettingsPage(QWidgetBase):
             folder,
             self.label_log_file_path_verfied,
             self.label_log_file_path_verify_btn,
-            self.log_file_path_verified,
-            "log_file_path",
         )
 
     def verify_log_file_name(self):
         self.response_update(
-            [self.log_file_name],
+            [self.lineEdit_log_file_name.text()],
             "log_file_name",
-            self.log_file_name,
+            self.lineEdit_log_file_name.text(),
             self.label_log_file_name_verfied,
             self.label_log_file_name_verify_btn,
-            self.log_file_name_verified,
-            "log_file_name",
         )
 
     def verify_log_backup_count(self):
         self.response_update(
-            [self.log_backup_count],
+            [self.lineEdit_log_backup_count.text()],
             "log_backup_count",
-            self.log_backup_count,
+            self.lineEdit_log_backup_count.text(),
             self.label_log_backup_count_verfied,
             self.label_log_backup_count_verify_btn,
-            self.log_backup_count_verified,
-            "log_backup_count",
             "int",
         )
 
     def verify_log_file_max_mbs(self):
         self.response_update(
-            [self.log_file_max_mbs],
+            [self.lineEdit_log_file_max_mbs.text()],
             "log_file_max_mbs",
-            self.log_file_max_mbs,
+            self.lineEdit_log_file_max_mbs.text(),
             self.label_log_file_max_mbs_verfied,
             self.label_log_file_max_mbs_verify_btn,
-            self.log_file_max_mbs_verified,
-            "log_file_max_mbs",
             "int",
         )
 
     def verify_log_keep_files_days(self):
         self.response_update(
-            [self.log_keep_files_days],
+            [self.lineEdit_log_keep_files_days.text()],
             "log_keep_files_days",
-            self.log_keep_files_days,
+            self.lineEdit_log_keep_files_days.text(),
             self.label_log_keep_files_days_verfied,
             self.label_log_keep_files_days_verify_btn,
-            self.log_keep_files_days_verified,
-            "log_keep_files_days",
             "int",
         )
 
     def apple_note_response(self, response):
         self.response_update(
-            [f"{self.apple_note if response else False}"],
-            "apple_note",
-            self.apple_note,
+            [f"{self.lineEdit_apple_note.text() if response else False}"],
+            "apple_note_name",
+            self.lineEdit_apple_note.text(),
             self.label_apple_note_verfied,
             self.label_apple_note_verify_btn,
-            self.apple_note_verified,
-            "apple_note",
         )
 
     def deck_response(self, response):
@@ -701,12 +484,10 @@ class SettingsPage(QWidgetBase):
         print(res)
         self.response_update(
             res,
-            "words",
-            self.words_deck,
+            "anki_deck_name",
+            self.lineEdit_anki_words_deck.text(),
             self.label_anki_words_deck_verfied,
             self.label_anki_words_verify_btn,
-            self.words_verified,
-            "words",
         )
 
     def model_response(self, response):
@@ -714,12 +495,10 @@ class SettingsPage(QWidgetBase):
         print(res)
         self.response_update(
             res,
-            "model",
-            self.model_deck,
+            "anki_model_name",
+            self.lineEdit_anki_model_deck.text(),
             self.label_anki_model_deck_verfied,
             self.label_anki_model_verify_btn,
-            self.model_verified,
-            "model",
         )
 
     def user_response(self, response):
@@ -727,12 +506,10 @@ class SettingsPage(QWidgetBase):
         print(res)
         self.response_update(
             res,
-            "user",
-            self.anki_user,
+            "anki_user",
+            self.lineEdit_anki_user.text(),
             self.label_anki_user_verfied,
             self.label_anki_user_verify_btn,
-            self.anki_user_verified,
-            "user",
         )
 
     def open_folder_dialog(self, key, input_field) -> None:
@@ -759,17 +536,18 @@ class SettingsPage(QWidgetBase):
         """Handle pasting only."""
         print("here")
         clipboard = QApplication.clipboard()
-        self.textEdit_google_api_key.setText(clipboard.text())
-        self.textEdit_change_secure_setting("google_api", self.textEdit_google_api_key)
+        text = clipboard.text()
+        self.textEdit_google_api_key.setText(text)
+        self.settings_model.change_secure_setting("google_api_key", text)
 
     def send_settings_update(self, key):
 
         # Import Page settings
-        if key in ["apple_note"]:
+        if key in ["apple_note_name"]:
             self.send_import_page_settings()
-        if key in ["audio_path", "google_api"]:
+        if key in ["audio_path", "google_api_key"]:
             self.send_audio_page_settings()
-        if key in ["words", "models"]:
+        if key in ["anki_deck_name", "anki_model_name"]:
             self.send_sync_page_settings()
         if key in [
             "log_file_path",
@@ -781,34 +559,53 @@ class SettingsPage(QWidgetBase):
             self.send_logs_page_setting()
 
     def send_import_page_settings(self):
-        self.import_page_settings.emit(self.apple_note, self.apple_note_verified)
+        apple_note_name, ann_verifed = self.settings_model.get_setting(
+            "apple_note_name"
+        )
+        self.import_page_settings.emit(apple_note_name, ann_verifed)
 
     def send_audio_page_settings(self):
+        google_api_key, gak_verifed = self.settings_model.get_setting("google_api_key")
+        anki_audio_path, aap_verifed = self.settings_model.get_setting(
+            "anki_audio_path"
+        )
+
         self.audio_page_settings.emit(
-            self.google_api_key,
-            self.google_api_key_verified,
-            self.anki_audio,
-            self.anki_audio_verified,
+            google_api_key,
+            gak_verifed,
+            anki_audio_path,
+            aap_verifed,
         )
 
     def send_sync_page_settings(self):
+        anki_deck_name, adn_verifed = self.settings_model.get_setting("anki_deck_name")
+        anki_model_name, amn_verifed = self.settings_model.get_setting(
+            "anki_model_name"
+        )
+
         self.sync_page_settings.emit(
-            self.words_deck, self.words_verified, self.model_deck, self.model_verified
+            anki_deck_name, adn_verifed, anki_model_name, amn_verifed
         )
 
     def send_logs_page_setting(self):
+        log_file_path, lfp_verifed = self.settings_model.get_setting("log_file_path")
+        log_file_name, lfn_verifed = self.settings_model.get_setting("log_file_name")
+        log_file_max_mbs, _ = self.settings_model.get_setting("log_file_max_mbs")
+        log_backup_count, _ = self.settings_model.get_setting("log_backup_count")
+        log_keep_files_days, _ = self.settings_model.get_setting("log_keep_files_days")
+
         self.log_page_settings.emit(
-            self.log_file_path,
-            self.log_file_path_verified,
-            self.log_file_name,
-            self.log_file_name_verified,
+            log_file_path,
+            lfp_verifed,
+            log_file_name,
+            lfn_verifed,
         )
         self.save_log_settings_model.emit(
-            self.log_file_path,
-            self.log_file_name,
-            self.log_file_max_mbs,
-            self.log_backup_count,
-            self.log_keep_files_days,
+            log_file_path,
+            log_file_name,
+            log_file_max_mbs,
+            log_backup_count,
+            log_keep_files_days,
             False,
         )
 
