@@ -1,20 +1,16 @@
-from PySide6.QtCore import QObject, QRect, QSize, Qt, QThread, Signal, Slot
-from PySide6.QtGui import QColor, QFont, QIcon, QPainter
+from PySide6.QtCore import QObject, QSize, Qt
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
-    QApplication,
-    QFileDialog,
-    QGridLayout,
     QHBoxLayout,
     QLabel,
     QLineEdit,
-    QListWidget,
-    QListWidgetItem,
     QPushButton,
     QSizePolicy,
-    QSpacerItem,
     QTextEdit,
     QVBoxLayout,
 )
+
+from models import AppSettingsModel
 
 
 class SettingsPageInputFactory(QObject):
@@ -25,6 +21,8 @@ class SettingsPageInputFactory(QObject):
 
         self.columns = columns
         self.settings_grid_layout = settings_grid
+        self.app_settings = AppSettingsModel()
+        self.app_settings.get_settings()
         self._x_icon = QIcon()
         self._x_icon.addFile(
             ":/images/red_check.png",
@@ -57,8 +55,10 @@ class SettingsPageInputFactory(QObject):
         return self._folder_icon
 
     def create_input_fields(
-        self, label_text, verify_button_text, lineEdit=True, folder_icon=False
+        self, key, label_text, verify_button_text, lineEdit=True, folder_icon=False
     ):
+
+        value, verified = self.app_settings.get_setting(key)
         last_row = self.settings_grid_layout.count() // self.columns
         h_layout = QHBoxLayout()
         h_layout.setAlignment(Qt.AlignLeft)
@@ -70,6 +70,7 @@ class SettingsPageInputFactory(QObject):
         verify_icon_button = QPushButton()
         verify_icon_button.setMaximumWidth(40)
         verify_icon_button.setStyleSheet("background:transparent;border: none;")
+        verify_icon_button.setIcon(self.check_icon if verified else self.x_icon)
         verify_button = QPushButton(verify_button_text)
         verify_button.setCursor(Qt.PointingHandCursor)
 
@@ -88,7 +89,7 @@ class SettingsPageInputFactory(QObject):
 
         if lineEdit:
             line_edit_field = QLineEdit()
-
+            line_edit_field.setText(str(value))
             h_layout.addWidget(line_edit_field)
             if folder_icon:
                 h_layout.addWidget(folder_icon_button)
@@ -97,7 +98,7 @@ class SettingsPageInputFactory(QObject):
 
             h_layout = QVBoxLayout()
             text_edit_field = QTextEdit()
-
+            text_edit_field.setText(value)
             h_layout.addWidget(text_edit_field)
             self.settings_grid_layout.addLayout(h_layout, last_row, 1, Qt.AlignTop)
 
@@ -120,3 +121,6 @@ class SettingsPageInputFactory(QObject):
             verify_button,
             h_layout,
         )
+
+    def change_icon_button(self, button, verified=False):
+        button.setIcon(self.check_icon if verified else self.x_icon)
