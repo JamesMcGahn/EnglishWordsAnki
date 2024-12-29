@@ -147,6 +147,9 @@ class LogSettingsModel(QObject, metaclass=QSingleton):
         self.log_file_path = (
             "./logs/" if self.log_file_path == "/" else self.log_file_path
         )
+        self.log_file_name = (
+            "file.log" if not self.log_file_path else self.log_file_name
+        )
         self.log_turn_off_print = bool(self.log_turn_off_print)
         print(
             ("log_file_path", self.log_file_path, default_log_file_path),
