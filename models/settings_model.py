@@ -48,6 +48,7 @@ class AppSettingsModel(QObject, metaclass=QSingleton):
             "google_api_key",
             "log_file_name",
             "log_file_max_mbs",
+            "log_file_path",
             "log_keep_files_days",
             "log_backup_count",
         ]

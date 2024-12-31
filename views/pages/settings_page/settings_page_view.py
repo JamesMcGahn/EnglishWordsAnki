@@ -14,17 +14,13 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
-from base import QWidgetBase
+from base import QSingleton, QWidgetBase
 from models import AppSettingsModel
 
 
-class SettingsPageView(QWidgetBase):
+class SettingsPageView(QWidgetBase, metaclass=QSingleton):
     folder_submit = Signal(str, str)
-    import_page_settings = Signal(str, bool)
-    audio_page_settings = Signal(str, bool, str, bool)
-    sync_page_settings = Signal(str, bool, str, bool)
-    log_page_settings = Signal(str, bool, str, bool)
-    save_log_settings_model = Signal(str, str, int, int, int, bool)
+    secure_setting_change = Signal(str, str)
 
     def __init__(self):
         super().__init__()
@@ -201,9 +197,7 @@ class SettingsPageView(QWidgetBase):
         clipboard = QApplication.clipboard()
         text = clipboard.text()
         self.textEdit_google_api_key.setText(text)
-
-        # TODO: signal to update settings
-        # self.settings_model.change_secure_setting("google_api_key", text)
+        self.secure_setting_change.emit("google_api_key", text)
 
     def create_input_fields(
         self, key, label_text, verify_button_text, lineEdit=True, folder_icon=False
