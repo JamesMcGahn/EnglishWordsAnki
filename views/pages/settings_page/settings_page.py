@@ -1,7 +1,6 @@
 import os
 
 from PySide6.QtCore import QThread, Signal, Slot
-from PySide6.QtWidgets import QFileDialog
 
 from base import QWidgetBase
 from core import AppleNoteImport, AudioThread, RemoveDuplicateAudio
@@ -13,7 +12,7 @@ from .settings_page_view import SettingsPageView
 
 
 class SettingsPage(QWidgetBase):
-    folder_submit = Signal(str, str)
+
     import_page_settings = Signal(str, bool)
     audio_page_settings = Signal(str, bool, str, bool)
     sync_page_settings = Signal(str, bool, str, bool)
@@ -21,6 +20,7 @@ class SettingsPage(QWidgetBase):
     save_log_settings_model = Signal(str, str, int, int, int, bool)
     verify_response_update_ui = Signal(str, bool)
     handle_change_update_ui = Signal(str)
+    change_verify_btn_disable = Signal(str, bool)
 
     def __init__(self):
         super().__init__()
@@ -39,7 +39,6 @@ class SettingsPage(QWidgetBase):
         print("home", self.home_directory)
         # self.get_settings("ALL", setText=True)
 
-        self.folder_submit.connect(self.folder_change)
         self.save_log_settings_model.connect(self.log_settings.save_log_settings)
 
         self.view.btn_apple_note_name_verify.clicked.connect(
@@ -59,32 +58,11 @@ class SettingsPage(QWidgetBase):
         self.view.btn_log_keep_files_days_verify.clicked.connect(
             self.verify_log_keep_files_days
         )
-        self.view.btn_anki_audio_path_verify.clicked.connect(
-            lambda: self.open_folder_dialog(
-                "anki_audio_path", self.view.lineEdit_anki_audio_path
-            )
-        )
-        self.view.btn_log_file_path_verify.clicked.connect(
-            lambda: self.open_folder_dialog(
-                "log_file_path", self.view.lineEdit_log_file_path
-            )
-        )
-
-        self.view.btn_log_file_path_folder.clicked.connect(
-            lambda: self.open_folder_dialog(
-                "log_file_path", self.view.lineEdit_log_file_path
-            )
-        )
-        self.view.btn_anki_audio_path_folder.clicked.connect(
-            lambda: self.open_folder_dialog(
-                "anki_audio_path", self.view.lineEdit_anki_audio_path
-            )
-        )
 
         self.line_edit_connections = [
             (self.view.lineEdit_apple_note_name, "apple_note_name", "str"),
             (self.view.lineEdit_anki_deck_name, "anki_deck_name", "str"),
-            (self.view.lineEdit_anki_model_name_deck, "anki_model_name", "str"),
+            (self.view.lineEdit_anki_model_name, "anki_model_name", "str"),
             (self.view.lineEdit_anki_user, "anki_user", "str"),
             (self.view.lineEdit_anki_audio_path, "anki_audio_path", "str"),
             (self.view.lineEdit_log_file_path, "log_file_path", "str"),
@@ -97,6 +75,8 @@ class SettingsPage(QWidgetBase):
         self.setup_text_changed_connections()
         self.verify_response_update_ui.connect(self.view.verify_response_update)
         self.handle_change_update_ui.connect(self.view.handle_setting_change_update)
+        self.change_verify_btn_disable.connect(self.view.set_verify_btn_disable)
+        self.view.folder_submit.connect(self.folder_change)
 
     def setup_text_changed_connections(self):
         for item in self.line_edit_connections:
@@ -120,41 +100,49 @@ class SettingsPage(QWidgetBase):
         self.settings_model.change_setting(field, word, type=type)
         self.handle_change_update_ui.emit(field)
 
-    def run_network_check(
-        self, task_id, url, json_data, success_callback, error_callback, btn
-    ):
+    def run_network_check(self, key, url, json_data, success_cb=None, error_cb=None):
         network_thread = QThread(self)
 
         worker = NetworkWorker(url, json=json_data, timeout=25)
         worker.moveToThread(network_thread)
 
         # Signal-Slot Connections
-        worker.response.connect(success_callback)
-        worker.error.connect(error_callback)
+        worker.response.connect(lambda: self.change_verify_btn_disable.emit(key, True))
+        if success_cb:
+            worker.response.connect(success_cb)
+        if error_cb:
+            worker.error.connect(error_cb)
         network_thread.started.connect(worker.do_work)
-        worker.finished.connect(lambda: self.cleanup_task(task_id))
-        network_thread.finished.connect(network_thread.deleteLater)
-        self.running_tasks[task_id] = (network_thread, worker)
-        # Disable Button & Start Thread
-        btn.setDisabled(True)
+        worker.finished.connect(lambda: self.cleanup_task(key))
+        self.running_tasks[key] = (network_thread, worker)
+        self.change_verify_btn_disable.emit(key, False)
         network_thread.start()
 
     def cleanup_task(self, task_id):
         if task_id in self.running_tasks:
-            _, worker = self.running_tasks.pop(task_id)
+            thread, worker = self.running_tasks.pop(task_id)
             worker.deleteLater()
+            thread.quit()
+            thread.deleteLater()
+
             print(f"Task {task_id} cleaned up.")
 
     def verify_apple_note_name(self):
         # TODO change to signal
+        self.change_verify_btn_disable.emit("apple_note_name", False)
         self.view.btn_apple_note_name_verify.setDisabled(False)
         self.apple_note_thread = QThread(self)
-        self.apple_worker = AppleNoteImport(self.view.lineEdit_apple_note_name.text())
+        self.apple_worker = AppleNoteImport(
+            self.view.get_line_edit_text("apple_note_name")
+        )
+        self.running_tasks["apple_note_name"] = (
+            self.apple_note_thread,
+            self.apple_worker,
+        )
         self.apple_worker.moveToThread(self.apple_note_thread)
         self.apple_worker.note_name_verified.connect(self.apple_note_response)
-        self.apple_note_thread.finished.connect(self.apple_note_thread.deleteLater)
+        self.apple_worker.finished.connect(lambda: self.cleanup_task("apple_note_name"))
         self.apple_note_thread.started.connect(self.apple_worker.verify_note_name)
-        self.apple_worker.finished.connect(self.apple_worker.deleteLater)
         self.apple_note_thread.start()
 
     def verify_deck_name(self):
@@ -162,36 +150,30 @@ class SettingsPage(QWidgetBase):
         print("here")
         # TODO change cb to signal
         self.run_network_check(
-            "verify_deck_name",
+            "anki_deck_name",
             "http://127.0.0.1:8765/",
             json_data,
             self.deck_response,
-            lambda: self.view.btn_anki_deck_name_verify.setDisabled(False),
-            self.view.btn_anki_deck_name_verify,
         )
 
     def verify_deck_model(self):
         # TODO change cb to signal
         json_data = {"action": "modelNames", "version": 6}
         self.run_network_check(
-            "verify_deck_model",
+            "anki_model_name",
             "http://127.0.0.1:8765/",
             json_data,
             self.model_response,
-            lambda: self.view.btn_anki_model_name_verify.setDisabled(False),
-            self.view.btn_anki_model_name_verify,
         )
 
     def verify_anki_user(self):
         # TODO change cb to signal
         json_data = {"action": "getProfiles", "version": 6}
         self.run_network_check(
-            "verify_anki_user",
+            "anki_user",
             "http://127.0.0.1:8765/",
             json_data,
             self.user_response,
-            lambda: self.view.btn_anki_user_verify.setDisabled(False),
-            self.view.btn_anki_user_verify,
         )
 
     def verify_google_api_key(self):
@@ -200,7 +182,7 @@ class SettingsPage(QWidgetBase):
         self.audio_thread = AudioThread(
             [WordModel("", "", "test", "", "", "", "", "")],
             folder_path="./",
-            credential_string=self.textEdit_google_api_key.toPlainText(),
+            credential_string=self.view.get_text_edit_text("google_api_key"),
         )
 
         self.audio_thread.audio_word.connect(self.google_api_key_response)
@@ -214,15 +196,8 @@ class SettingsPage(QWidgetBase):
     def google_api_key_response(self, response):
         print()
         success = response.status == Status.AUDIO
-        self.response_update(
-            [
-                f"{self.view.textEdit_google_api_key.toPlainText() if success else False}"
-            ],
-            "google_api_key",
-            self.view.textEdit_google_api_key.toPlainText(),
-            self.view.label_google_api_key_verified,
-            self.view.btn_google_api_key_verify,
-        )
+        text = self.view.get_text_edit_text("google_api_key")
+        self.response_update([f"{text if success else False}"], "google_api_key", text)
 
         if success:
             paths = [response.audio_path]
@@ -234,13 +209,7 @@ class SettingsPage(QWidgetBase):
             self.removal_thread.finished.connect(self.removal_thread.deleteLater)
             self.removal_thread.start()
 
-    def response_update(
-        self,
-        response,
-        key,
-        value,
-        type="str",
-    ):
+    def response_update(self, response, key, value, type="str"):
         print("a", value, response)
         if value in response:
             print("b")
@@ -277,89 +246,44 @@ class SettingsPage(QWidgetBase):
         )
 
     def verify_log_file_name(self):
-        self.response_update(
-            [self.view.lineEdit_log_file_name.text()],
-            "log_file_name",
-            self.view.lineEdit_log_file_name.text(),
-        )
+        text = self.view.get_line_edit_text("log_file_name")
+        self.response_update([text], "log_file_name", text)
 
     def verify_log_backup_count(self):
-        self.response_update(
-            [self.view.lineEdit_log_backup_count.text()],
-            "log_backup_count",
-            self.view.lineEdit_log_backup_count.text(),
-            "int",
-        )
+        text = self.view.get_line_edit_text("log_backup_count")
+        self.response_update([text], "log_backup_count", text, "int")
 
     def verify_log_file_max_mbs(self):
-        self.response_update(
-            [self.view.lineEdit_log_file_max_mbs.text()],
-            "log_file_max_mbs",
-            self.view.lineEdit_log_file_max_mbs.text(),
-            "int",
-        )
+        text = self.view.get_line_edit_text("log_file_max_mbs")
+        self.response_update([text], "log_file_max_mbs", text, "int")
 
     def verify_log_keep_files_days(self):
-        self.response_update(
-            [self.view.lineEdit_log_keep_files_days.text()],
-            "log_keep_files_days",
-            self.view.lineEdit_log_keep_files_days.text(),
-            "int",
-        )
+        text = self.view.get_line_edit_text("log_keep_files_days")
+        self.response_update([text], "log_keep_files_days", text, "int")
 
     def apple_note_response(self, response):
+        text = self.view.get_line_edit_text("apple_note_name")
         self.response_update(
-            [f"{self.view.lineEdit_apple_note_name.text() if response else False}"],
-            "apple_note_name",
-            self.view.lineEdit_apple_note_name.text(),
+            [f"{text if response else False}"], "apple_note_name", text
         )
 
     def deck_response(self, response):
         res = response["result"]
         print(res)
-        self.response_update(
-            res,
-            "anki_deck_name",
-            self.view.lineEdit_anki_deck_name.text(),
-        )
+        text = self.view.get_line_edit_text("anki_deck_name")
+        self.response_update(res, "anki_deck_name", text)
 
     def model_response(self, response):
         res = response["result"]
         print(res)
-        self.response_update(
-            res,
-            "anki_model_name",
-            self.view.lineEdit_anki_model_name_deck.text(),
-        )
+        text = self.view.get_line_edit_text("anki_model_name")
+        self.response_update(res, "anki_model_name", text)
 
     def user_response(self, response):
         res = response["result"]
         print(res)
-        self.response_update(
-            res,
-            "anki_user",
-            self.view.lineEdit_anki_user.text(),
-        )
-
-    def open_folder_dialog(self, key, input_field) -> None:
-        """
-        Opens a dialog for the user to select a folder for storing log files.
-        Once a folder is selected, the path is updated in the corresponding input field.
-
-        Returns:
-            None: This function does not return a value.
-        """
-
-        path = input_field.text() or "./"
-
-        folder = QFileDialog.getExistingDirectory(self, "Select Folder", dir=path)
-
-        if folder:
-            folder = folder if folder[-1] == "/" else folder + "/"
-            input_field.blockSignals(True)
-            input_field.setText(folder)
-            input_field.blockSignals(False)
-            self.folder_submit.emit(key, folder)
+        text = self.view.get_line_edit_text("anki_user")
+        self.response_update(res, "anki_user", text)
 
     def send_settings_update(self, key):
 

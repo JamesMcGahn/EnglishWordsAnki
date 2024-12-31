@@ -85,7 +85,7 @@ class SettingsPageView(QWidgetBase):
         )
 
         (
-            self.lineEdit_anki_model_name_deck,
+            self.lineEdit_anki_model_name,
             self.label_anki_model_name_verified_icon,
             self.btn_anki_model_name_verify,
             self.hlayout_anki_model_name,
@@ -169,6 +169,32 @@ class SettingsPageView(QWidgetBase):
         self.textEdit_google_api_key.setReadOnly(True)
         self.google_auth_api_key_paste_btn.clicked.connect(self.google_auth_paste_text)
 
+        self.btn_anki_audio_path_verify.clicked.connect(
+            lambda: self.open_folder_dialog("anki_audio_path")
+        )
+        self.btn_log_file_path_verify.clicked.connect(
+            lambda: self.open_folder_dialog("log_file_path")
+        )
+
+        self.btn_log_file_path_folder.clicked.connect(
+            lambda: self.open_folder_dialog("log_file_path")
+        )
+        self.btn_anki_audio_path_folder.clicked.connect(
+            lambda: self.open_folder_dialog("anki_audio_path")
+        )
+
+    def get_line_edit_text(self, key):
+        line_edit = getattr(self, f"lineEdit_{key}")
+        if not line_edit:
+            raise ValueError(f"No line edit found for key '{key}'")
+        return line_edit.text()
+
+    def get_text_edit_text(self, key):
+        textEdit = getattr(self, f"textEdit_{key}")
+        if not textEdit:
+            raise ValueError(f"No line edit found for key '{key}'")
+        return textEdit.toPlainText()
+
     def google_auth_paste_text(self):
         """Handle pasting only."""
         print("here")
@@ -178,26 +204,6 @@ class SettingsPageView(QWidgetBase):
 
         # TODO: signal to update settings
         # self.settings_model.change_secure_setting("google_api_key", text)
-
-    def open_folder_dialog(self, key, input_field) -> None:
-        """
-        Opens a dialog for the user to select a folder for storing log files.
-        Once a folder is selected, the path is updated in the corresponding input field.
-
-        Returns:
-            None: This function does not return a value.
-        """
-
-        path = input_field.text() or "./"
-
-        folder = QFileDialog.getExistingDirectory(self, "Select Folder", dir=path)
-
-        if folder:
-            folder = folder if folder[-1] == "/" else folder + "/"
-            input_field.blockSignals(True)
-            input_field.setText(folder)
-            input_field.blockSignals(False)
-            self.folder_submit.emit(key, folder)
 
     def create_input_fields(
         self, key, label_text, verify_button_text, lineEdit=True, folder_icon=False
@@ -218,6 +224,7 @@ class SettingsPageView(QWidgetBase):
         verify_icon_button.setIcon(self.check_icon if verified else self.x_icon)
         verify_button = QPushButton(verify_button_text)
         verify_button.setCursor(Qt.PointingHandCursor)
+        verify_button.setDisabled(verified)
 
         self.settings_grid_layout.addWidget(label, last_row, 0, Qt.AlignTop)
 
@@ -287,5 +294,29 @@ class SettingsPageView(QWidgetBase):
         self.change_icon_button(icon_label, False)
 
         verify_btn = getattr(self, f"btn_{key}_verify")
-        if verify_btn.isEnabled():
-            verify_btn.setDisabled(False)
+        verify_btn.setDisabled(False)
+
+    @Slot(str, bool)
+    def set_verify_btn_disable(self, key, disable):
+        verify_btn = getattr(self, f"btn_{key}_verify")
+        verify_btn.setDisabled(disable)
+
+    def open_folder_dialog(self, key) -> None:
+        """
+        Opens a dialog for the user to select a folder for storing log files.
+        Once a folder is selected, the path is updated in the corresponding input field.
+
+        Returns:
+            None: This function does not return a value.
+        """
+        line_edit = getattr(self, f"lineEdit_{key}")
+        path = line_edit.text() or "./"
+
+        folder = QFileDialog.getExistingDirectory(self, "Select Folder", dir=path)
+
+        if folder:
+            folder = folder if folder[-1] == "/" else folder + "/"
+            line_edit.blockSignals(True)
+            line_edit.setText(folder)
+            line_edit.blockSignals(False)
+            self.folder_submit.emit(key, folder)
