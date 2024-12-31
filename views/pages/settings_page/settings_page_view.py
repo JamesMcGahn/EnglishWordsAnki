@@ -1,4 +1,4 @@
-from PySide6.QtCore import QSize, Qt, Signal
+from PySide6.QtCore import QSize, Qt, Signal, Slot
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QApplication,
@@ -119,7 +119,7 @@ class SettingsPageView(QWidgetBase):
         )
         (
             self.lineEdit_log_file_name,
-            self.label_log_file_name_verified,
+            self.label_log_file_name_verified_icon,
             self.btn_log_file_name_verify,
             self.hlayout_log_file_name,
         ) = self.create_input_fields(
@@ -127,7 +127,7 @@ class SettingsPageView(QWidgetBase):
         )
         (
             self.lineEdit_log_backup_count,
-            self.label_log_backup_count_verified,
+            self.label_log_backup_count_verified_icon,
             self.btn_log_backup_count_verify,
             self.hlayout_log_backup_count,
         ) = self.create_input_fields(
@@ -135,7 +135,7 @@ class SettingsPageView(QWidgetBase):
         )
         (
             self.lineEdit_log_file_max_mbs,
-            self.label_log_file_max_mbs_verified,
+            self.label_log_file_max_mbs_verified_icon,
             self.btn_log_file_max_mbs_verify,
             self.hlayout_log_file_max_mbs,
         ) = self.create_input_fields(
@@ -143,7 +143,7 @@ class SettingsPageView(QWidgetBase):
         )
         (
             self.lineEdit_log_keep_files_days,
-            self.label_log_keep_files_days_verified,
+            self.label_log_keep_files_days_verified_icon,
             self.btn_log_keep_files_days_verify,
             self.hlayout_log_keep_files_days,
         ) = self.create_input_fields(
@@ -151,7 +151,7 @@ class SettingsPageView(QWidgetBase):
         )
         (
             self.textEdit_google_api_key,
-            self.label_google_api_key_verified,
+            self.label_google_api_key_verified_icon,
             self.btn_google_api_key_verify,
             self.vlayout_google_api_key,
         ) = self.create_input_fields(
@@ -175,6 +175,7 @@ class SettingsPageView(QWidgetBase):
         clipboard = QApplication.clipboard()
         text = clipboard.text()
         self.textEdit_google_api_key.setText(text)
+
         # TODO: signal to update settings
         # self.settings_model.change_secure_setting("google_api_key", text)
 
@@ -268,3 +269,14 @@ class SettingsPageView(QWidgetBase):
 
     def change_icon_button(self, button, verified=False):
         button.setIcon(self.check_icon if verified else self.x_icon)
+
+    @Slot(str, bool)
+    def verify_response_update(self, key, verified):
+        icon_label = getattr(self, f"label_{key}_verified_icon")
+        verify_btn = getattr(self, f"btn_{key}_verify")
+        if verified:
+            self.change_icon_button(icon_label, True)
+            verify_btn.setDisabled(True)
+        else:
+            self.change_icon_button(icon_label, False)
+            verify_btn.setDisabled(False)

@@ -19,6 +19,7 @@ class SettingsPage(QWidgetBase):
     sync_page_settings = Signal(str, bool, str, bool)
     log_page_settings = Signal(str, bool, str, bool)
     save_log_settings_model = Signal(str, str, int, int, int, bool)
+    verify_response_update_ui = Signal(str, bool)
 
     def __init__(self):
         super().__init__()
@@ -125,34 +126,35 @@ class SettingsPage(QWidgetBase):
             (
                 self.view.lineEdit_log_file_name,
                 "log_file_name",
-                self.view.label_log_file_path_verified_icon,
+                self.view.label_log_file_name_verified_icon,
                 self.view.btn_log_file_name_verify,
                 "str",
             ),
             (
                 self.view.lineEdit_log_backup_count,
                 "log_backup_count",
-                self.view.label_log_backup_count_verified,
+                self.view.label_log_backup_count_verified_icon,
                 self.view.btn_log_backup_count_verify,
                 "int",
             ),
             (
                 self.view.lineEdit_log_file_max_mbs,
                 "log_file_max_mbs",
-                self.view.label_log_file_max_mbs_verified,
+                self.view.label_log_file_max_mbs_verified_icon,
                 self.view.btn_log_file_max_mbs_verify,
                 "int",
             ),
             (
                 self.view.lineEdit_log_keep_files_days,
                 "log_keep_files_days",
-                self.view.label_log_keep_files_days_verified,
+                self.view.label_log_keep_files_days_verified_icon,
                 self.view.btn_log_keep_files_days_verify,
                 "int",
             ),
         ]
 
         self.setup_text_changed_connections()
+        self.verify_response_update_ui.connect(self.view.verify_response_update)
 
     def setup_text_changed_connections(self):
         for item in self.line_edit_connections:
@@ -298,21 +300,17 @@ class SettingsPage(QWidgetBase):
         response,
         key,
         value,
-        icon_label,
-        verify_btn,
         type="str",
     ):
         print("a", value, response)
         if value in response:
             print("b")
             self.settings_model.change_setting(key, value, True, type)
-            icon_label.setIcon(self.view.check_icon)
-            verify_btn.setDisabled(True)
+            self.verify_response_update_ui.emit(key, True)
 
             self.send_settings_update(key)
         else:
-            verify_btn.setDisabled(False)
-            icon_label.setIcon(self.view.x_icon)
+            self.verify_response_update_ui.emit(key, False)
 
     @Slot(str, str)
     def folder_change(self, key, folder):
@@ -327,8 +325,6 @@ class SettingsPage(QWidgetBase):
             [f"{folder if isExist else False}"],
             "anki_audio_path",
             folder,
-            self.view.label_anki_audio_path_verified_icon,
-            self.view.btn_anki_audio_path_verify,
         )
 
     def verify_log_file_path(self, folder):
@@ -339,8 +335,6 @@ class SettingsPage(QWidgetBase):
             [f"{folder if isExist else False}"],
             "log_file_path",
             folder,
-            self.view.label_log_file_path_verified_icon,
-            self.view.btn_log_file_path_verify,
         )
 
     def verify_log_file_name(self):
@@ -348,8 +342,6 @@ class SettingsPage(QWidgetBase):
             [self.view.lineEdit_log_file_name.text()],
             "log_file_name",
             self.view.lineEdit_log_file_name.text(),
-            self.view.label_log_file_name_verified,
-            self.view.btn_log_file_name_verify,
         )
 
     def verify_log_backup_count(self):
@@ -357,8 +349,6 @@ class SettingsPage(QWidgetBase):
             [self.view.lineEdit_log_backup_count.text()],
             "log_backup_count",
             self.view.lineEdit_log_backup_count.text(),
-            self.view.label_log_backup_count_verified,
-            self.view.btn_log_backup_count_verify,
             "int",
         )
 
@@ -367,8 +357,6 @@ class SettingsPage(QWidgetBase):
             [self.view.lineEdit_log_file_max_mbs.text()],
             "log_file_max_mbs",
             self.view.lineEdit_log_file_max_mbs.text(),
-            self.view.label_log_file_max_mbs_verified,
-            self.view.btn_log_file_max_mbs_verify,
             "int",
         )
 
@@ -377,8 +365,6 @@ class SettingsPage(QWidgetBase):
             [self.view.lineEdit_log_keep_files_days.text()],
             "log_keep_files_days",
             self.view.lineEdit_log_keep_files_days.text(),
-            self.view.label_log_keep_files_days_verified,
-            self.view.btn_log_keep_files_days_verify,
             "int",
         )
 
@@ -387,8 +373,6 @@ class SettingsPage(QWidgetBase):
             [f"{self.view.lineEdit_apple_note_name.text() if response else False}"],
             "apple_note_name",
             self.view.lineEdit_apple_note_name.text(),
-            self.view.label_apple_note_name_verified_icon,
-            self.view.btn_apple_note_name_verify,
         )
 
     def deck_response(self, response):
@@ -398,8 +382,6 @@ class SettingsPage(QWidgetBase):
             res,
             "anki_deck_name",
             self.view.lineEdit_anki_deck_name.text(),
-            self.view.label_anki_deck_name_verified_icon,
-            self.view.btn_anki_deck_name_verify,
         )
 
     def model_response(self, response):
@@ -409,8 +391,6 @@ class SettingsPage(QWidgetBase):
             res,
             "anki_model_name",
             self.view.lineEdit_anki_model_name_deck.text(),
-            self.view.label_anki_model_name_verified_icon,
-            self.view.btn_anki_model_name_verify,
         )
 
     def user_response(self, response):
@@ -420,8 +400,6 @@ class SettingsPage(QWidgetBase):
             res,
             "anki_user",
             self.view.lineEdit_anki_user.text(),
-            self.view.label_anki_user_verified_icon,
-            self.view.btn_anki_user_verify,
         )
 
     def open_folder_dialog(self, key, input_field) -> None:
