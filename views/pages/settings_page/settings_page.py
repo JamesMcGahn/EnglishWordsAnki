@@ -20,6 +20,7 @@ class SettingsPage(QWidgetBase):
     log_page_settings = Signal(str, bool, str, bool)
     save_log_settings_model = Signal(str, str, int, int, int, bool)
     verify_response_update_ui = Signal(str, bool)
+    handle_change_update_ui = Signal(str)
 
     def __init__(self):
         super().__init__()
@@ -81,91 +82,32 @@ class SettingsPage(QWidgetBase):
         )
 
         self.line_edit_connections = [
-            (
-                self.view.lineEdit_apple_note_name,
-                "apple_note_name",
-                self.view.label_apple_note_name_verified_icon,
-                self.view.btn_apple_note_name_verify,
-                "str",
-            ),
-            (
-                self.view.lineEdit_anki_deck_name,
-                "anki_deck_name",
-                self.view.label_anki_deck_name_verified_icon,
-                self.view.btn_anki_deck_name_verify,
-                "str",
-            ),
-            (
-                self.view.lineEdit_anki_model_name_deck,
-                "anki_model_name",
-                self.view.label_anki_model_name_verified_icon,
-                self.view.btn_anki_model_name_verify,
-                "str",
-            ),
-            (
-                self.view.lineEdit_anki_user,
-                "anki_user",
-                self.view.label_anki_user_verified_icon,
-                self.view.btn_anki_user_verify,
-                "str",
-            ),
-            (
-                self.view.lineEdit_anki_audio_path,
-                "anki_audio_path",
-                self.view.label_anki_audio_path_verified_icon,
-                self.view.btn_anki_audio_path_verify,
-                "str",
-            ),
-            (
-                self.view.lineEdit_log_file_path,
-                "log_file_path",
-                self.view.label_log_file_path_verified_icon,
-                self.view.btn_log_file_path_verify,
-                "str",
-            ),
-            (
-                self.view.lineEdit_log_file_name,
-                "log_file_name",
-                self.view.label_log_file_name_verified_icon,
-                self.view.btn_log_file_name_verify,
-                "str",
-            ),
-            (
-                self.view.lineEdit_log_backup_count,
-                "log_backup_count",
-                self.view.label_log_backup_count_verified_icon,
-                self.view.btn_log_backup_count_verify,
-                "int",
-            ),
-            (
-                self.view.lineEdit_log_file_max_mbs,
-                "log_file_max_mbs",
-                self.view.label_log_file_max_mbs_verified_icon,
-                self.view.btn_log_file_max_mbs_verify,
-                "int",
-            ),
-            (
-                self.view.lineEdit_log_keep_files_days,
-                "log_keep_files_days",
-                self.view.label_log_keep_files_days_verified_icon,
-                self.view.btn_log_keep_files_days_verify,
-                "int",
-            ),
+            (self.view.lineEdit_apple_note_name, "apple_note_name", "str"),
+            (self.view.lineEdit_anki_deck_name, "anki_deck_name", "str"),
+            (self.view.lineEdit_anki_model_name_deck, "anki_model_name", "str"),
+            (self.view.lineEdit_anki_user, "anki_user", "str"),
+            (self.view.lineEdit_anki_audio_path, "anki_audio_path", "str"),
+            (self.view.lineEdit_log_file_path, "log_file_path", "str"),
+            (self.view.lineEdit_log_file_name, "log_file_name", "str"),
+            (self.view.lineEdit_log_backup_count, "log_backup_count", "int"),
+            (self.view.lineEdit_log_file_max_mbs, "log_file_max_mbs", "int"),
+            (self.view.lineEdit_log_keep_files_days, "log_keep_files_days", "int"),
         ]
 
         self.setup_text_changed_connections()
         self.verify_response_update_ui.connect(self.view.verify_response_update)
+        self.handle_change_update_ui.connect(self.view.handle_setting_change_update)
 
     def setup_text_changed_connections(self):
         for item in self.line_edit_connections:
-            line_edit, field, icon_label, verify_btn, field_type = item
+            line_edit, field, field_type = item
             line_edit.textChanged.connect(
-                lambda word, field=field, icon_label=icon_label, verify_btn=verify_btn, type=field_type: self.handle_setting_change(
-                    field, word, icon_label, verify_btn, type=type
+                lambda word, field=field, type=field_type: self.handle_setting_change(
+                    field, word, type=type
                 )
             )
 
-    def handle_setting_change(self, field, word, icon_label, verify_btn, type="str"):
+    def handle_setting_change(self, field, word, type="str"):
         """
         Handles the setting change: saves the new value and updates the icon.
 
@@ -176,10 +118,7 @@ class SettingsPage(QWidgetBase):
         """
         print(field, word)
         self.settings_model.change_setting(field, word, type=type)
-        # TODO change to signal
-        self.view.change_icon_button(icon_label)
-        if verify_btn.isEnabled():
-            verify_btn.setDisabled(False)
+        self.handle_change_update_ui.emit(field)
 
     def run_network_check(
         self, task_id, url, json_data, success_callback, error_callback, btn

@@ -280,3 +280,12 @@ class SettingsPageView(QWidgetBase):
         else:
             self.change_icon_button(icon_label, False)
             verify_btn.setDisabled(False)
+
+    @Slot(str)
+    def handle_setting_change_update(self, key):
+        icon_label = getattr(self, f"label_{key}_verified_icon")
+        self.change_icon_button(icon_label, False)
+
+        verify_btn = getattr(self, f"btn_{key}_verify")
+        if verify_btn.isEnabled():
+            verify_btn.setDisabled(False)
