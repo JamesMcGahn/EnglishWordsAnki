@@ -9,6 +9,8 @@ from ..navbars import HeaderNavBar, IconOnlyNavBar, IconTextNavBar
 
 
 class CentralWidget(QWidgetBase):
+    close_main_window = Signal()
+    start_import = Signal()
     close_main_window = Signal(int)
 
     def __init__(self):
@@ -54,6 +56,7 @@ class CentralWidget(QWidgetBase):
         self.appshutdown.connect(self.main_screen_widget.notified_app_shutting)
         self.main_screen_widget.page_changed.connect(self.page_changed)
         self.main_screen_widget.force_update.connect(self.update_paint)
+        self.start_import.connect(self.main_screen_widget.start_import)
 
     def paintEvent(self, event: QPaintEvent) -> None:
         """

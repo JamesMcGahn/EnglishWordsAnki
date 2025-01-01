@@ -24,6 +24,7 @@ class MainScreen(QWidgetBase):
     page_changed = Signal(int)
     send_app_settings = Signal()
     force_update = Signal()
+    start_import = Signal()
 
     def __init__(self):
         """
@@ -67,6 +68,7 @@ class MainScreen(QWidgetBase):
         self.appshutdown.connect(self.ui.define_page.notified_app_shutting)
         self.appshutdown.connect(self.ui.audio_page.notified_app_shutting)
         self.appshutdown.connect(self.ui.sync_page.notified_app_shutting)
+        self.start_import.connect(self.ui.import_page.import_words_from_apple_notes)
         self.send_app_settings.connect(self.ui.settings_page.send_all_settings)
         self.send_app_settings.emit()
 

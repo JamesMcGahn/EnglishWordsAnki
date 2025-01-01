@@ -17,6 +17,7 @@ from views.layout import CentralWidget
 class MainWindow(QMainWindow):
     appshutdown = Signal()
     send_logs = Signal(str, str, bool)
+    start_import = Signal()
     change_page = Signal(int)
 
     def __init__(self, app):
@@ -47,6 +48,8 @@ class MainWindow(QMainWindow):
         self.centralWidget.close_main_window.connect(self.close_main_window)
         self.appshutdown.connect(self.logger.close)
         self.appshutdown.connect(self.centralWidget.notified_app_shutting)
+        self.start_import.connect(self.centralWidget.start_import)
+
         self.change_page.connect(self.centralWidget.page_changed)
         app_icon = QIcon()
         app_icon.addFile(":/system_icons/tray_icon_16.png", QSize(16, 16))
@@ -60,17 +63,28 @@ class MainWindow(QMainWindow):
         tray_menu = QMenu()
         maximize_action = QAction("Maximize", self)
         minimize_action = QAction("Minimize", self)
+        import_action = QAction("Import", self)
         quit_action = QAction("Quit", self)
         maximize_action.triggered.connect(self.showNormal)
         minimize_action.triggered.connect(self.showMinimized)
+        import_action.triggered.connect(
+            self.import_action
+        )  # Call the import_words method from CentralWidget class. This method is not defined here.
         quit_action.triggered.connect(self.close)
         tray_menu.addAction(maximize_action)
         tray_menu.addAction(minimize_action)
+        tray_menu.addAction(
+            import_action
+        )  # Call the import_action method from MainWindow class. This method is not defined here.
         tray_menu.addAction(quit_action)
         tray_icon.setContextMenu(tray_menu)
         tray_icon.show()
 
         tray_icon.activated.connect(self.on_tray_icon_click)
+
+    def import_action(self):
+        print("import")
+        self.start_import.emit()
 
     def on_tray_icon_click(self, reason: QSystemTrayIcon.ActivationReason) -> None:
         """Handle tray icon click events. If minimized, show window as normal and bring to the font.
