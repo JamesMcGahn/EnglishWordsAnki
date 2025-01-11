@@ -55,7 +55,7 @@ class AudioThread(QThread):
     def success_download(self, path, word):
         path_dict = PathManager.regex_path(path)
         word.audio_path = path
-        word.audio = f"[{path_dict["filename"]}{path_dict["ext"]}]"
+        word.audio = f"[sound:{path_dict["filename"]}{path_dict["ext"]}]"
         word.status = Status.AUDIO
         self.audio_word.emit(word)
         self.download_next_word()
