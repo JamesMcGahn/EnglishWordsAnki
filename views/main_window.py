@@ -1,3 +1,6 @@
+import sys
+from threading import Thread
+
 from PySide6.QtCore import QSize, QThread, Signal, Slot
 from PySide6.QtGui import QAction, QCloseEvent, QFont, QFontDatabase, QIcon
 from PySide6.QtWidgets import (
@@ -11,6 +14,7 @@ from PySide6.QtWidgets import (
 
 from components.dialogs import ConfirmationDialog
 from services.logger import Logger
+from services.server import FlaskWorker
 from views.layout import CentralWidget
 
 
@@ -81,9 +85,22 @@ class MainWindow(QMainWindow):
         tray_icon.show()
 
         tray_icon.activated.connect(self.on_tray_icon_click)
+        self.start_server()
+
+    def start_server(self):
+        self.server_thread = QThread(self)
+        self.flask_worker = FlaskWorker()
+        self.flask_worker.moveToThread(self.server_thread)
+        self.appshutdown.connect(self.flask_worker.stop_server)
+        self.flask_worker.finished.connect(self.cleanup_server)
+        self.server_thread.started.connect(self.flask_worker.run)
+        self.server_thread.start()
+
+    def cleanup_server(self):
+        self.server_thread.quit()
+        self.server_thread.wait()
 
     def import_action(self):
-        print("import")
         self.start_import.emit()
 
     def on_tray_icon_click(self, reason: QSystemTrayIcon.ActivationReason) -> None:
@@ -115,12 +132,12 @@ class MainWindow(QMainWindow):
             "Are you sure you do want to close the application?",
             "Close",
         )
-        self.send_logs.emit("Close Application Button Clicked", "INFO", True)
+        self.logging("Close Application Button Clicked")
         if dialog.show():
             self.close()
         else:
             self.change_page.emit(current_index)
-            self.send_logs.emit("Cancelled Closing Application", "INFO", True)
+            self.logging("Cancelled Closing Application")
 
     def closeEvent(self, event: QCloseEvent) -> None:
         """
@@ -134,4 +151,22 @@ class MainWindow(QMainWindow):
         """
         self.send_logs.emit("Closing Application", "INFO", True)
         self.appshutdown.emit()
+        sys.stdout.flush()
         event.accept()
+
+    def logging(self, msg: str, level: str = "INFO", print_msg: bool = True) -> None:
+        """
+        Logs a message with the specified log level.
+
+        This method send logs to Logger with a message, log level, and
+        an optional flag to print the message.
+
+        Args:
+            msg (str): The message to be logged.
+            level (str, optional): The log level (e.g., "INFO", "WARN", "ERROR"). Defaults to "INFO".
+            print_msg (bool, optional): Flag to determine whether to print the log message. Defaults to True.
+
+        Returns:
+            None
+        """
+        self.send_logs.emit(msg, level, print_msg)
