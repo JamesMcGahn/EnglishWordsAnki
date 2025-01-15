@@ -94,7 +94,6 @@ class VerifySettings(QWidgetBase):
             print(f"Task {task_id} cleaned up.")
 
     def _verify_apple_note_name(self):
-        # TODO change to signal
         self.change_verify_btn_disable.emit("apple_note_name", False)
         self.apple_note_thread = QThread(self)
         self.apple_worker = AppleNoteImport(

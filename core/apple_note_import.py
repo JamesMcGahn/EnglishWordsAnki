@@ -23,8 +23,7 @@ class AppleNoteImport(QObject):
 
             self.content = self.clean_html(self.content)
             self.content = self.content.split(",")
-            # TODO: uncomment when ready to delete note after import
-            # self.clear_note_content(self.noteName)
+            self.clear_note_content(self.noteName)
             self.result.emit(self.content)
         else:
             self.result.emit([])

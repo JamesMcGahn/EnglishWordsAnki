@@ -43,8 +43,6 @@ class WordsModel(QObject, metaclass=QSingleton):
         super().__init__()
         self._words = []
         self.settings = AppSettings()
-        # #TODO reset enabled for test - remove line when done
-        self.reset_model()
         self.init_words_model()
 
     @property
