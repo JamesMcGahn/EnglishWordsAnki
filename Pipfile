@@ -23,6 +23,9 @@ pyside6 = "*"
 pyqt-toast-notification = "*"
 uuid = "*"
 keyring = "*"
+flask = "*"
+waitress = "*"
+flask-cors = "*"
 
 [dev-packages]
 
