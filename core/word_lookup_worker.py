@@ -134,10 +134,13 @@ class WordLookupWorker(QThread):
                 example = ""
                 audio = ""
 
-                for meaning in all_meanings:
-                    print(meaning)
+                for index, meaning in enumerate(all_meanings):
+
+                    if index != 0:
+                        definition_string += "<br><br>"
+
                     definition_string += (
-                        f"{meaning.partOfSpeech} - {meaning.definition}"
+                        f"<b>{meaning.partOfSpeech}</b> - {meaning.definition}"
                     )
                     synonyms = add_non_duplicates(synonyms, meaning.synonyms)
                     example += meaning.example
