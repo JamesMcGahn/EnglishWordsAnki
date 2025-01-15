@@ -6,6 +6,8 @@ from PySide6.QtWidgets import (
     QListWidget,
     QListWidgetItem,
     QPushButton,
+    QSizePolicy,
+    QSpacerItem,
     QVBoxLayout,
 )
 
@@ -20,6 +22,7 @@ class ImportPage(QWidgetBase):
     save_words_to_model = Signal()
     to_define_word = Signal(str, Status)
     start_defining_words = Signal(int)
+    delete_words_model = Signal(list)
 
     def __init__(self):
         super().__init__()
@@ -29,6 +32,14 @@ class ImportPage(QWidgetBase):
 
         self.apple_note_name = None
         self.apple_note_verified = False
+
+        top_btn_h_layout = QHBoxLayout()
+        self.import_btn = QPushButton("Import")
+        self.import_btn.setMinimumWidth(200)
+        hspacer = QSpacerItem(20, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        top_btn_h_layout.addItem(hspacer)
+        top_btn_h_layout.addWidget(self.import_btn)
+        word_set_layout.addLayout(top_btn_h_layout)
 
         self.arrow_up = QPushButton("")
         self.arrow_down = QPushButton("")
@@ -64,10 +75,12 @@ class ImportPage(QWidgetBase):
         self.list_widget = QListWidget()
         self.list_widget.setSelectionMode(QListWidget.MultiSelection)
 
-        self.import_btn = QPushButton("Import")
         self.start_define_btn = QPushButton("Define Selected Words")
-        word_set_layout.addWidget(self.import_btn)
-        word_set_layout.addWidget(self.start_define_btn)
+        self.delete_words_btn = QPushButton("Delete Selected Words")
+        bottom_btn_h_layout = QHBoxLayout()
+        bottom_btn_h_layout.addWidget(self.start_define_btn)
+        bottom_btn_h_layout.addWidget(self.delete_words_btn)
+        word_set_layout.addLayout(bottom_btn_h_layout)
 
         h_layout.addWidget(self.list_widget)
 
@@ -81,6 +94,8 @@ class ImportPage(QWidgetBase):
         self.save_words_to_model.connect(self.wordsModel.save_words)
         self.start_define_btn.clicked.connect(self.start_define_words)
         self.to_define_word.connect(self.wordsModel.update_status)
+        self.delete_words_model.connect(self.wordsModel.delete_words)
+        self.delete_words_btn.clicked.connect(self.delete_words)
 
         for word in self.wordsModel.undefined_words:
             self.add_word(word)
@@ -180,8 +195,17 @@ class ImportPage(QWidgetBase):
         self.save_words_to_model.emit()
         self.start_defining_words.emit(1)
 
+    def delete_words(self):
+        selected_words = self.list_widget.selectedItems()
+
+        ids = []
+        for word in selected_words:
+            ids.append(word.data(Qt.UserRole))
+            self.list_widget.takeItem(self.list_widget.row(word))
+        self.delete_words_model.emit(ids)
+        self.save_words_to_model.emit()
+
     @Slot(str, bool)
     def receive_settings_update(self, apple_note, apple_note_verified):
-        print("import page", apple_note)
         self.apple_note_name = apple_note
         self.apple_note_verified = apple_note_verified
