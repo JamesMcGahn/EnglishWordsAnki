@@ -60,6 +60,11 @@ class VerifySettings(QWidgetBase):
         elif key == "log_keep_files_days":
             text = self.view.get_line_edit_text("log_keep_files_days")
             self.update_ui_verified("log_keep_files_days", text, "int")
+        elif key == "dictionary_source":
+            text = self.view.get_combo_box_text("dictionary_source")
+            self.update_ui_verified("dictionary_source", text)
+        elif key == "merriam_webster_api_key":
+            self._verify_merriam_webster_api_key()
 
     def update_ui_verified(self, key, value, type="str"):
         self.settings_model.change_setting(key, value, True, type)
@@ -67,7 +72,7 @@ class VerifySettings(QWidgetBase):
         self.send_settings_update.emit(key)
 
     def run_network_check(self, key, url, json_data, success_cb=None, error_cb=None):
-        network_thread = QThread(self)
+        network_thread = QThread()
 
         worker = NetworkWorker(url, json=json_data, timeout=25)
         worker.moveToThread(network_thread)
@@ -80,18 +85,22 @@ class VerifySettings(QWidgetBase):
             worker.error.connect(error_cb)
         network_thread.started.connect(worker.do_work)
         worker.finished.connect(lambda: self.cleanup_task(key))
+        network_thread.finished.connect(lambda: self.cleanup_task(key, True))
         self.running_tasks[key] = (network_thread, worker)
         self.change_verify_btn_disable.emit(key, False)
         network_thread.start()
 
-    def cleanup_task(self, task_id):
+    def cleanup_task(self, task_id, thread_finished=False):
         if task_id in self.running_tasks:
-            thread, worker = self.running_tasks.pop(task_id)
-            worker.deleteLater()
-            thread.quit()
-            thread.deleteLater()
-
-            print(f"Task {task_id} cleaned up.")
+            if thread_finished:
+                w_thread, worker = self.running_tasks.pop(task_id)
+                w_thread.deleteLater()
+                print(f"Task {task_id} - Thread deleting.")
+            else:
+                w_thread, worker = self.running_tasks[task_id]
+                worker.deleteLater()
+                w_thread.quit()
+                print(f"Task {task_id} - Worker cleaned up. Thread quitting.")
 
     def _verify_apple_note_name(self):
         self.change_verify_btn_disable.emit("apple_note_name", False)
@@ -153,6 +162,16 @@ class VerifySettings(QWidgetBase):
 
         self.audio_thread.start()
 
+    def _verify_merriam_webster_api_key(self):
+        key = self.view.get_line_edit_text("merriam_webster_api_key")
+        print(key, "key")
+        self.run_network_check(
+            "merriam_webster_api_key",
+            f"https://www.dictionaryapi.com/api/v3/references/collegiate/json/voluminous?key={key}",
+            None,
+            self.merriam_webster_response,
+        )
+
     def _verify_path_keys(self, key, folder):
 
         isExist = os.path.exists(folder)
@@ -206,3 +225,7 @@ class VerifySettings(QWidgetBase):
         print(res)
         text = self.view.get_line_edit_text("anki_user")
         self.response_update(res, "anki_user", text)
+
+    def merriam_webster_response(self, _):
+        text = self.view.get_line_edit_text("merriam_webster_api_key")
+        self.update_ui_verified("merriam_webster_api_key", text)

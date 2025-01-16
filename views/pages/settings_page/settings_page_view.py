@@ -2,6 +2,7 @@ from PySide6.QtCore import QSize, Qt, Signal, Slot
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QApplication,
+    QComboBox,
     QFileDialog,
     QGridLayout,
     QHBoxLayout,
@@ -145,6 +146,27 @@ class SettingsPageView(QWidgetBase, metaclass=QSingleton):
         ) = self.create_input_fields(
             "log_keep_files_days", "Keep Log File Days:", "Save Log File Days"
         )
+
+        (
+            self.comboBox_dictionary_source,
+            self.label_dictionary_source_verified_icon,
+            self.btn_dictionary_source_verify,
+            self.hlayout_dictionary_source,
+        ) = self.create_input_fields(
+            "dictionary_source",
+            "Dictionary Source:",
+            "Save Dictionary Source",
+            lineEdit=False,
+            comboBox=["Free Dictionary API", "Merriam Webster"],
+        )
+        (
+            self.lineEdit_merriam_webster_api_key,
+            self.label_merriam_webster_api_key_verified_icon,
+            self.btn_merriam_webster_api_key_verify,
+            self.hlayout_merriam_webster_api_key,
+        ) = self.create_input_fields(
+            "merriam_webster_api_key", "Merriam Webster API Key:", "Verify API Key"
+        )
         (
             self.textEdit_google_api_key,
             self.label_google_api_key_verified_icon,
@@ -185,6 +207,12 @@ class SettingsPageView(QWidgetBase, metaclass=QSingleton):
             raise ValueError(f"No line edit found for key '{key}'")
         return line_edit.text()
 
+    def get_combo_box_text(self, key):
+        combo_box = getattr(self, f"comboBox_{key}")
+        if not combo_box:
+            raise ValueError(f"No line edit found for key '{key}'")
+        return combo_box.currentText()
+
     def get_text_edit_text(self, key):
         textEdit = getattr(self, f"textEdit_{key}")
         if not textEdit:
@@ -200,7 +228,13 @@ class SettingsPageView(QWidgetBase, metaclass=QSingleton):
         self.secure_setting_change.emit("google_api_key", text)
 
     def create_input_fields(
-        self, key, label_text, verify_button_text, lineEdit=True, folder_icon=False
+        self,
+        key,
+        label_text,
+        verify_button_text,
+        lineEdit=True,
+        folder_icon=False,
+        comboBox=False,
     ):
 
         value, verified = self.app_settings.get_setting(key)
@@ -218,7 +252,10 @@ class SettingsPageView(QWidgetBase, metaclass=QSingleton):
         verify_icon_button.setIcon(self.check_icon if verified else self.x_icon)
         verify_button = QPushButton(verify_button_text)
         verify_button.setCursor(Qt.PointingHandCursor)
-        verify_button.setDisabled(verified)
+        if isinstance(verified, bool):
+            verify_button.setDisabled(verified)
+        else:
+            verify_button.setDisabled(False)
 
         self.settings_grid_layout.addWidget(label, last_row, 0, Qt.AlignTop)
 
@@ -240,8 +277,13 @@ class SettingsPageView(QWidgetBase, metaclass=QSingleton):
             if folder_icon:
                 h_layout.addWidget(folder_icon_button)
             self.settings_grid_layout.addLayout(h_layout, last_row, 1, Qt.AlignTop)
+        elif comboBox and len(comboBox) > 0:
+            comboBox_widget = QComboBox()
+            comboBox_widget.addItems(comboBox)
+            comboBox_widget.setCurrentText(value)
+            h_layout.addWidget(comboBox_widget)
+            self.settings_grid_layout.addLayout(h_layout, last_row, 1, Qt.AlignTop)
         else:
-
             h_layout = QVBoxLayout()
             text_edit_field = QTextEdit()
             text_edit_field.setText(value)
@@ -262,7 +304,11 @@ class SettingsPageView(QWidgetBase, metaclass=QSingleton):
                 folder_icon_button,
             )
         return (
-            line_edit_field if lineEdit else text_edit_field,
+            (
+                line_edit_field
+                if lineEdit
+                else comboBox_widget if comboBox else text_edit_field
+            ),
             verify_icon_button,
             verify_button,
             h_layout,

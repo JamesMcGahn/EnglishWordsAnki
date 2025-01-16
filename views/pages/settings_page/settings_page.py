@@ -67,6 +67,18 @@ class SettingsPage(QWidgetBase):
         self.view.btn_log_keep_files_days_verify.clicked.connect(
             lambda: self.handle_verify("log_keep_files_days")
         )
+        self.view.btn_dictionary_source_verify.clicked.connect(
+            lambda: self.handle_verify("dictionary_source")
+        )
+        self.view.btn_merriam_webster_api_key_verify.clicked.connect(
+            lambda: self.handle_verify("merriam_webster_api_key")
+        )
+
+        self.view.comboBox_dictionary_source.currentIndexChanged.connect(
+            lambda index, sender=self.view.comboBox_dictionary_source, key="dictionary_source": self.onComboBox_changed(
+                index, sender, key
+            )
+        )
 
         self.line_edit_connections = [
             (self.view.lineEdit_apple_note_name, "apple_note_name", "str"),
@@ -79,6 +91,11 @@ class SettingsPage(QWidgetBase):
             (self.view.lineEdit_log_backup_count, "log_backup_count", "int"),
             (self.view.lineEdit_log_file_max_mbs, "log_file_max_mbs", "int"),
             (self.view.lineEdit_log_keep_files_days, "log_keep_files_days", "int"),
+            (
+                self.view.lineEdit_merriam_webster_api_key,
+                "merriam_webster_api_key",
+                "str",
+            ),
         ]
 
         self.setup_text_changed_connections()
@@ -101,6 +118,11 @@ class SettingsPage(QWidgetBase):
                     field, word, type=type
                 )
             )
+
+    def onComboBox_changed(self, index, sender, key):
+        selected_text = sender.currentText()
+        self.settings_model.change_setting(key, selected_text, "str")
+        self.handle_change_update_ui.emit(key)
 
     def handle_setting_change(self, field, word, type="str"):
         """

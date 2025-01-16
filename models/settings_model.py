@@ -18,6 +18,8 @@ class AppSettingsModel(QObject, metaclass=QSingleton):
         self.anki_audio_path = ""
         self.apple_note_name = ""
         self.google_api_key = ""
+        self.dictionary_source = ""
+        self.merriam_webster_api_key = ""
 
         self.anki_deck_name_verified = False
         self.anki_model_name_verified = False
@@ -25,6 +27,8 @@ class AppSettingsModel(QObject, metaclass=QSingleton):
         self.anki_audio_path_verified = False
         self.apple_note_name_verified = False
         self.google_api_key_verified = False
+        self.dictionary_source_verified = False
+        self.merriam_webster_api_key_verified = False
 
         self.log_file_path_verified = False
         self.log_file_name_verified = False
@@ -51,6 +55,8 @@ class AppSettingsModel(QObject, metaclass=QSingleton):
             "log_file_path",
             "log_keep_files_days",
             "log_backup_count",
+            "dictionary_source",
+            "merriam_webster_api_key",
         ]
 
         self.settings_mapping = {
@@ -97,6 +103,14 @@ class AppSettingsModel(QObject, metaclass=QSingleton):
             "log_backup_count": {
                 "default": 5,
                 "type": "int",
+            },
+            "dictionary_source": {
+                "default": "Free Dictionary API",
+                "type": "str",
+            },
+            "merriam_webster_api_key": {
+                "default": "",
+                "type": "secure",
             },
         }
 
