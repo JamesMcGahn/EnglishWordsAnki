@@ -9,7 +9,7 @@ from PySide6.QtWidgets import (
 
 from base import QWidgetBase
 from components.dialogs import EditWordDialog, MultiSelectionDialog
-from core import WordLookupWorker
+from core import WordLookupWorker, WordLookupWorkerWebster
 from models import Status, WordModel, WordsModel
 
 
@@ -28,6 +28,11 @@ class DefinePage(QWidgetBase):
         word_set_layout = QVBoxLayout(self)
 
         self.word_lookup_thread = None
+
+        self.dictionary_lookup_souce = None
+        self.dictionary_lookup_souce_verified = None
+        self.merriam_webster_api_key = None
+        self.merriam_webster_api_key_verified = None
 
         # List Widget
         define_queue_qv = QVBoxLayout()
@@ -159,7 +164,20 @@ class DefinePage(QWidgetBase):
             return
 
         self.start_define_btn.setDisabled(True)
-        self.word_lookup_thread = WordLookupWorker(self.wordsModel.to_be_defined_words)
+
+        if (
+            self.dictionary_lookup_souce == "Merriam Webster"
+            and self.merriam_webster_api_key
+            and self.merriam_webster_api_key_verified
+        ):
+            self.word_lookup_thread = WordLookupWorkerWebster(
+                self.wordsModel.to_be_defined_words,
+                MW_API_KEY=self.merriam_webster_api_key,
+            )
+        else:
+            self.word_lookup_thread = WordLookupWorker(
+                self.wordsModel.to_be_defined_words
+            )
         self.word_lookup_thread.send_logs.connect(self.send_logs)
         self.word_lookup_thread.multi_definitions.connect(self.select_definitions)
         self.word_lookup_thread.multi_words.connect(self.select_word)
@@ -226,6 +244,7 @@ class DefinePage(QWidgetBase):
             item = self.list_widget.item(index)
             if item and item.data(Qt.UserRole) == word.guid:
                 self.list_widget.takeItem(self.list_widget.row(item))
+        self.save_words_to_model.emit()
 
     def receive_skipped_word(self, word):
         list_item = QListWidgetItem(word.word)
@@ -236,6 +255,7 @@ class DefinePage(QWidgetBase):
             item = self.list_widget.item(index)
             if item and item.data(Qt.UserRole) == word.guid:
                 self.list_widget.takeItem(self.list_widget.row(item))
+        self.save_words_to_model.emit()
 
     def start_audio_words(self):
         self.defined_list_widget.selectAll()
@@ -245,3 +265,23 @@ class DefinePage(QWidgetBase):
             self.defined_list_widget.takeItem(self.defined_list_widget.row(word))
         self.save_words_to_model.emit()
         self.start_audio_for_words.emit(2)
+
+    @Slot(str, bool, str, bool)
+    def receive_settings_update(
+        self,
+        dictionary_lookup_souce,
+        dictionary_lookup_souce_verified,
+        merriam_webster_api_key,
+        merriam_webster_api_key_verified,
+    ):
+        print(
+            "define page",
+            dictionary_lookup_souce,
+            dictionary_lookup_souce_verified,
+            merriam_webster_api_key,
+            merriam_webster_api_key_verified,
+        )
+        self.dictionary_lookup_souce = dictionary_lookup_souce
+        self.dictionary_lookup_souce_verified = dictionary_lookup_souce_verified
+        self.merriam_webster_api_key = merriam_webster_api_key
+        self.merriam_webster_api_key_verified = merriam_webster_api_key_verified

@@ -63,6 +63,9 @@ class MainScreen(QWidgetBase):
         self.ui.settings_page.log_page_settings.connect(
             self.ui.logs_page.receive_settings_update
         )
+        self.ui.settings_page.define_page_settings.connect(
+            self.ui.define_page.receive_settings_update
+        )
 
         self.appshutdown.connect(self.ui.import_page.notified_app_shutting)
         self.appshutdown.connect(self.ui.define_page.notified_app_shutting)
