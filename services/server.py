@@ -81,8 +81,18 @@ class FlaskWorker(QObjectBase):
             self.server_create.close()
             self.server_create = None
             self.logging(f"Server stopped - {self.HOST} on port {self.PORT} ")
-
+        if self.is_thread_pool_running():
+            self.executor.shutdown(wait=True, cancel_futures=False)
         self.finished.emit()
+
+    def is_thread_pool_running(self) -> bool:
+        """
+        Checks if the thread pool is still running any threads.
+
+        Returns:
+            bool: True if the thread pool is running, False otherwise.
+        """
+        return any(thread.is_alive() for thread in self.executor._threads)
 
     def handle_word_post(self, request):
         data = request.json
