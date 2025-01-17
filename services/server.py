@@ -14,6 +14,7 @@ class FlaskWorker(QObjectBase):
     add_word_to_model = Signal(WordModel)
     stop_signal = Signal()
     finished = Signal()
+    log_with_toast = Signal(str, str, str, str, bool)
 
     server = Flask(__name__)
     CORS(server)
@@ -38,7 +39,7 @@ class FlaskWorker(QObjectBase):
 
         @self.server.route("/data", methods=["GET"])
         def route_data():
-            return jsonify({"message": "Hello, World!"})
+            return jsonify({"message": "Data coming soon"})
 
         @self.server.route("/word", methods=["POST"])
         def route_word():
@@ -66,9 +67,7 @@ class FlaskWorker(QObjectBase):
                 )
             else:
                 self.logging(f"Server interrupted: {e}", "ERROR")
-            print("***************sss")
         except Exception as e:
-            print("***************sssaaa")
             self.running = False
             self.logging(f"Server interrupted: {e}", "ERROR")
 
@@ -98,9 +97,25 @@ class FlaskWorker(QObjectBase):
         data = request.json
         if "word" not in data:
             return jsonify({"error": "Missing 'word' field"}), 400
+        received_word = data["word"]
 
+        if (
+            not isinstance(received_word, str)
+            or not received_word.strip()
+            or received_word.lower() == "undefined"
+        ):
+            return jsonify({"error": "'word' must be a non-empty valid string"}), 400
+
+        self.log_with_toast.emit(
+            "Received Word From Extension",
+            f"received word:  {received_word}",
+            "INFO",
+            "INFO",
+            True,
+        )
         new_word = WordModel(
-            Status.ADDED, str(uuid.uuid4()), data["word"], "", "", "", "", ""
+            Status.ADDED, str(uuid.uuid4()), received_word, "", "", "", "", ""
         )
         self.add_word_to_model.emit(new_word)
-        return jsonify({"word": data["word"]}), 201
+
+        return jsonify({"word": received_word}), 201
