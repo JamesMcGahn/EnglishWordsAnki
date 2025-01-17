@@ -26,7 +26,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self, app):
         super().__init__()
-
+        self.prog_close_aplications = False
         self.app = app
         self.setWindowTitle("English Dictionary")
         self.setObjectName("MainWindow")
@@ -48,7 +48,6 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.centralWidget)
         self.logger = Logger(turn_off_print=False)
         self.send_logs.connect(self.logger.insert)
-        self.centralWidget.send_logs.connect(self.logger.insert)
         self.centralWidget.close_main_window.connect(self.close_main_window)
         self.appshutdown.connect(self.logger.close)
         self.appshutdown.connect(self.centralWidget.notified_app_shutting)
@@ -91,6 +90,7 @@ class MainWindow(QMainWindow):
         self.server_thread = QThread(self)
         self.flask_worker = FlaskWorker()
         self.flask_worker.moveToThread(self.server_thread)
+        self.flask_worker.log_with_toast.connect(self.centralWidget.log_with_toast)
         self.appshutdown.connect(self.flask_worker.stop_server)
         self.flask_worker.finished.connect(self.cleanup_server)
         self.server_thread.started.connect(self.flask_worker.run)
@@ -127,17 +127,29 @@ class MainWindow(QMainWindow):
         Returns:
             None: This function does not return a value.
         """
+
+        self.logging("Close Application Button Clicked")
+        if self.confirm_close_application(current_index):
+            self.prog_close_aplications = True
+            self.close()
+
+    def confirm_close_application(
+        self,
+        current_index: int = None,
+    ):
+
         dialog = ConfirmationDialog(
             "Close Application?",
             "Are you sure you do want to close the application?",
             "Close",
         )
-        self.logging("Close Application Button Clicked")
         if dialog.show():
-            self.close()
+            return True
         else:
-            self.change_page.emit(current_index)
+            if current_index is not None:
+                self.change_page.emit(current_index)
             self.logging("Cancelled Closing Application")
+            return False
 
     def closeEvent(self, event: QCloseEvent) -> None:
         """
@@ -149,10 +161,21 @@ class MainWindow(QMainWindow):
         Returns:
             None: This function does not return a value.
         """
+        if self.prog_close_aplications:
+            self.close_application_process()
+            event.accept()
+            self.prog_close_aplications = False
+        else:
+            if self.confirm_close_application():
+                self.close_application_process()
+                event.accept()
+            else:
+                event.ignore()
+
+    def close_application_process(self):
         self.send_logs.emit("Closing Application", "INFO", True)
         self.appshutdown.emit()
         sys.stdout.flush()
-        event.accept()
 
     def logging(self, msg: str, level: str = "INFO", print_msg: bool = True) -> None:
         """
