@@ -43,4 +43,5 @@ class QToast(Toast):
         self.setPosition(ToastPosition.BOTTOM_RIGHT)
         self.setTitle(self.title)
         self.setText(self.message)
+        self.setStayOnTop(True)
         self.show()
