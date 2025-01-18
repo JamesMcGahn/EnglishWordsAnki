@@ -76,6 +76,16 @@ class WordsModel(QObject, metaclass=QSingleton):
         return [word for word in self._words if word.status == Status.TO_BE_DEFINED]
 
     @property
+    def defined_words(self) -> List:
+        """
+        Property to access the list of rule set.
+
+        Returns:
+            list: The list of current rule sets.
+        """
+        return [word for word in self._words if word.status == Status.DEFINDED]
+
+    @property
     def skipped_defined_words(self) -> List:
         """
         Property to access the list of rule set.
@@ -128,6 +138,26 @@ class WordsModel(QObject, metaclass=QSingleton):
         return [word for word in self._words if word.status == Status.TO_BE_AUDIO]
 
     @property
+    def audio_error_words(self) -> List:
+        """
+        Property to access the list of rule set.
+
+        Returns:
+            list: The list of current rule sets.
+        """
+        return [word for word in self._words if word.status == Status.SKIPPED_AUDIO]
+
+    @property
+    def audio_words(self) -> List:
+        """
+        Property to access the list of rule set.
+
+        Returns:
+            list: The list of current rule sets.
+        """
+        return [word for word in self._words if word.status == Status.AUDIO]
+
+    @property
     def to_be_synced_words(self) -> List:
         """
         Property to access the list of rule set.
@@ -136,6 +166,38 @@ class WordsModel(QObject, metaclass=QSingleton):
             list: The list of current rule sets.
         """
         return [word for word in self._words if word.status == Status.TO_BE_SYNCED]
+
+    @property
+    def anki_duplicate_words(self) -> List:
+        """
+        Property to access the list of rule set.
+
+        Returns:
+            list: The list of current rule sets.
+        """
+        return [word for word in self._words if word.status == Status.SKIPPED_ANKI_DUP]
+
+    @property
+    def anki_error_words(self) -> List:
+        """
+        Property to access the list of rule set.
+
+        Returns:
+            list: The list of current rule sets.
+        """
+        return [
+            word for word in self._words if word.status == Status.SKIPPED_ANKI_ERROR
+        ]
+
+    @property
+    def synced_words(self) -> List:
+        """
+        Property to access the list of rule set.
+
+        Returns:
+            list: The list of current rule sets.
+        """
+        return [word for word in self._words if word.status == Status.ANKI_SYNCED]
 
     @Slot(WordModel)
     def add_word(self, word: WordModel) -> None:
@@ -187,6 +249,12 @@ class WordsModel(QObject, metaclass=QSingleton):
                     words.append(word)
 
             self._words = words
+
+    @Slot()
+    def remove_synced_words(self):
+        self._words = [
+            word for word in self._words if word.status != Status.ANKI_SYNCED
+        ]
 
     @Slot()
     def delete_duplicates(self):
