@@ -11,7 +11,7 @@ from .verify_settings import VerifySettings
 
 
 class SettingsPage(QWidgetBase):
-
+    main_app_settings = Signal(bool, bool)
     import_page_settings = Signal(str, bool)
     audio_page_settings = Signal(str, bool, str, bool)
     sync_page_settings = Signal(str, bool, str, bool)
@@ -74,10 +74,18 @@ class SettingsPage(QWidgetBase):
         self.view.btn_merriam_webster_api_key_verify.clicked.connect(
             lambda: self.handle_verify("merriam_webster_api_key")
         )
+        self.view.btn_auto_save_on_close_verify.clicked.connect(
+            lambda: self.handle_verify("auto_save_on_close")
+        )
 
         self.view.comboBox_dictionary_source.currentIndexChanged.connect(
             lambda index, sender=self.view.comboBox_dictionary_source, key="dictionary_source": self.onComboBox_changed(
                 index, sender, key
+            )
+        )
+        self.view.comboBox_auto_save_on_close.currentIndexChanged.connect(
+            lambda index, sender=self.view.comboBox_auto_save_on_close, key="auto_save_on_close", type="bool": self.onComboBox_changed(
+                index, sender, key, type
             )
         )
 
@@ -133,9 +141,10 @@ class SettingsPage(QWidgetBase):
         text = field.text()
         self.handle_secure_setting_change(key, text)
 
-    def onComboBox_changed(self, index, sender, key):
+    def onComboBox_changed(self, index, sender, key, type="str"):
         selected_text = sender.currentText()
-        self.handle_setting_change(key, selected_text)
+        print("currentText", selected_text)
+        self.handle_setting_change(key, selected_text, type)
 
     def handle_setting_change(self, field, word, type="str"):
         """
@@ -184,6 +193,14 @@ class SettingsPage(QWidgetBase):
             self.send_logs_page_setting()
         elif key in ["dictionary_source", "merriam_webster_api_key"]:
             self.send_define_page_settings()
+        elif key in ["auto_save_on_close"]:
+            self.main_app_settings()
+
+    def send_main_app_settings(self):
+        auto_save_on_close, auto_save_on_close_verifed = (
+            self.settings_model.get_setting("auto_save_on_close")
+        )
+        self.main_app_settings.emit(auto_save_on_close, auto_save_on_close_verifed)
 
     def send_define_page_settings(self):
         dictionary_source, dict_source_verifed = self.settings_model.get_setting(
@@ -259,3 +276,4 @@ class SettingsPage(QWidgetBase):
         self.send_sync_page_settings()
         self.send_logs_page_setting()
         self.send_define_page_settings()
+        self.send_main_app_settings()

@@ -65,6 +65,9 @@ class VerifySettings(QWidgetBase):
             self.update_ui_verified("dictionary_source", text)
         elif key == "merriam_webster_api_key":
             self._verify_merriam_webster_api_key()
+        elif key == "auto_save_on_close":
+            text = self.view.get_combo_box_text("auto_save_on_close")
+            self.update_ui_verified("auto_save_on_close", text, "bool")
 
     def update_ui_verified(self, key, value, type="str"):
         self.settings_model.change_setting(key, value, True, type)

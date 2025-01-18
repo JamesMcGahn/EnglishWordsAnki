@@ -160,6 +160,18 @@ class SettingsPageView(QWidgetBase, metaclass=QSingleton):
             comboBox=["Free Dictionary API", "Merriam Webster"],
         )
         (
+            self.comboBox_auto_save_on_close,
+            self.label_auto_save_on_close_verified_icon,
+            self.btn_auto_save_on_close_verify,
+            self.hlayout_auto_save_on_close,
+        ) = self.create_input_fields(
+            "auto_save_on_close",
+            "Auto Save on Close:",
+            "Save Auto Close",
+            lineEdit=False,
+            comboBox=["True", "False"],
+        )
+        (
             self.lineEdit_merriam_webster_api_key,
             self.label_merriam_webster_api_key_verified_icon,
             self.btn_merriam_webster_api_key_verify,
@@ -280,7 +292,7 @@ class SettingsPageView(QWidgetBase, metaclass=QSingleton):
         elif comboBox and len(comboBox) > 0:
             comboBox_widget = QComboBox()
             comboBox_widget.addItems(comboBox)
-            comboBox_widget.setCurrentText(value)
+            comboBox_widget.setCurrentText(str(value))
             h_layout.addWidget(comboBox_widget)
             self.settings_grid_layout.addLayout(h_layout, last_row, 1, Qt.AlignTop)
         else:

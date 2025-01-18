@@ -112,6 +112,7 @@ class AppSettingsModel(QObject, metaclass=QSingleton):
                 "default": "",
                 "type": "secure",
             },
+            "auto_save_on_close": {"default": True, "type": "bool"},
         }
 
     def get_settings(self):
@@ -148,11 +149,17 @@ class AppSettingsModel(QObject, metaclass=QSingleton):
         try:
             if type == "int":
                 value = int(value if value else 0)
+                self.settings.set_value(key, value)
+            elif type == "bool":
+                value = bool(value.lower() == "true")
+                self.settings.set_value(key, value)
+            else:
+                self.settings.set_value(key, str(value))
+            self.settings.set_value(f"{key}-verified", verified)
             setattr(self, key, value)
             setattr(self, f"{key}_verified", verified)
             print("ss", key, value)
-            self.settings.set_value(key, str(value))
-            self.settings.set_value(f"{key}-verified", verified)
+
         except AttributeError as e:
             print(f"Error: Attribute '{key}' or '{key}_verified' does not exist. {e}")
         self.settings.end_group()
