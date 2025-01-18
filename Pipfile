@@ -28,6 +28,7 @@ waitress = "*"
 flask-cors = "*"
 
 [dev-packages]
+nuitka = "*"
 
 [requires]
 python_version = "3.12"
