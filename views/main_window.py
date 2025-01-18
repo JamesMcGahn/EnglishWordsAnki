@@ -23,10 +23,12 @@ class MainWindow(QMainWindow):
     send_logs = Signal(str, str, bool)
     start_import = Signal()
     change_page = Signal(int)
+    stop_server = Signal()
 
     def __init__(self, app):
         super().__init__()
-        self.prog_close_aplications = False
+        self.prog_close_applications = False
+        self.trigger_server_stop = False
         self.app = app
         self.setWindowTitle("English Dictionary")
         self.setObjectName("MainWindow")
@@ -85,20 +87,28 @@ class MainWindow(QMainWindow):
 
         tray_icon.activated.connect(self.on_tray_icon_click)
         self.start_server()
+        self.app.instance().aboutToQuit.connect(self.cleanup_server)
 
     def start_server(self):
         self.server_thread = QThread(self)
         self.flask_worker = FlaskWorker()
         self.flask_worker.moveToThread(self.server_thread)
         self.flask_worker.log_with_toast.connect(self.centralWidget.log_with_toast)
-        self.appshutdown.connect(self.flask_worker.stop_server)
+        # self.appshutdown.connect(self.flask_worker.stop_server)
+        self.stop_server.connect(self.flask_worker.stop_server)
         self.flask_worker.finished.connect(self.cleanup_server)
         self.server_thread.started.connect(self.flask_worker.run)
         self.server_thread.start()
 
     def cleanup_server(self):
-        self.server_thread.quit()
-        self.server_thread.wait()
+        if not self.trigger_server_stop:
+            self.stop_server.emit()
+            self.trigger_server_stop = True
+            return
+
+        if self.server_thread.isRunning():
+            self.server_thread.quit()
+            self.server_thread.wait()
 
     def import_action(self):
         self.start_import.emit()
@@ -130,7 +140,7 @@ class MainWindow(QMainWindow):
 
         self.logging("Close Application Button Clicked")
         if self.confirm_close_application(current_index):
-            self.prog_close_aplications = True
+            self.prog_close_applications = True
             self.close()
 
     def confirm_close_application(
@@ -161,10 +171,11 @@ class MainWindow(QMainWindow):
         Returns:
             None: This function does not return a value.
         """
-        if self.prog_close_aplications:
+
+        if self.prog_close_applications:
             self.close_application_process()
             event.accept()
-            self.prog_close_aplications = False
+            self.prog_close_applications = False
         else:
             if self.confirm_close_application():
                 self.close_application_process()
@@ -173,8 +184,9 @@ class MainWindow(QMainWindow):
                 event.ignore()
 
     def close_application_process(self):
-        self.send_logs.emit("Closing Application", "INFO", True)
+        self.cleanup_server()
         self.appshutdown.emit()
+        self.send_logs.emit("Closing Application", "INFO", True)
         sys.stdout.flush()
 
     def logging(self, msg: str, level: str = "INFO", print_msg: bool = True) -> None:
