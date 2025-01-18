@@ -185,6 +185,13 @@ class ImportPage(QWidgetBase):
             )
             self.add_word_to_model.emit(new_word)
         self.save_words_to_model.emit()
+        self.log_with_toast(
+            "Imported Words From Apple Note",
+            "Words have been imported from Apple Note.",
+            "INFO",
+            "SUCCESS",
+            parent=self,
+        )
 
     def start_define_words(self):
         selected_words = self.list_widget.selectedItems()
