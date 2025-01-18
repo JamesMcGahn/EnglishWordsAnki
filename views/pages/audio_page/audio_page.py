@@ -87,6 +87,12 @@ class AudioPage(QWidgetBase):
         for word in self.wordsModel.to_be_audio_words:
             self.add_word(word)
 
+        for word in self.wordsModel.audio_error_words:
+            self.receive_error_word(word)
+
+        for word in self.wordsModel.audio_words:
+            self.receive_audio_word(word)
+
     def move_error_word_to_sync(self):
         word = self.remove_from_error_list()
         if word:

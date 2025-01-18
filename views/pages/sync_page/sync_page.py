@@ -84,6 +84,15 @@ class SyncPage(QWidgetBase):
         for word in self.wordsModel.to_be_synced_words:
             self.add_word(word)
 
+        for word in self.wordsModel.synced_words:
+            self.receive_synced_word(word)
+
+        for word in self.wordsModel.anki_duplicate_words:
+            self.receive_error_word(word, True)
+
+        for word in self.wordsModel.anki_error_words:
+            self.receive_error_word(word, False)
+
     def remove_duplicates(self):
         guids = []
         paths = []
@@ -100,6 +109,7 @@ class SyncPage(QWidgetBase):
         self.removal_worker.finished.connect(
             lambda: self.on_file_removal_completed(guids)
         )
+        self.removal_worker.finished.connect(self.removal_thread.quit)
         self.removal_thread.finished.connect(self.removal_worker.deleteLater)
         self.removal_thread.finished.connect(self.removal_thread.deleteLater)
         self.removal_thread.start()

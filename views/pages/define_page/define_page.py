@@ -86,8 +86,15 @@ class DefinePage(QWidgetBase):
         self.update_word_model.connect(self.wordsModel.update_word)
         self.get_audio_btn.clicked.connect(self.start_audio_words)
         self.change_status.connect(self.wordsModel.update_status)
+
         for word in self.wordsModel.to_be_defined_words:
             self.add_word(word)
+
+        for word in self.wordsModel.skipped_defined_words:
+            self.receive_skipped_word(word)
+
+        for word in self.wordsModel.defined_words:
+            self.receive_defined_word(word)
 
     def edit_skipped_word(self):
         item = self.skipped_list_widget.currentItem()
